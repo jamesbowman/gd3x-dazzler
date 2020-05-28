@@ -2,6 +2,7 @@ build/ram.v: build/nuc.hex mkrom.py
 	python mkrom.py
 
 build/nuc.hex: cross.fs basewords.fs nuc.fs
+        mkdir -p build
 	gforth cross.fs basewords.fs nuc.fs
 
 bootstrap: build/nuc.hex mkrom.py verilator/bootstrap
