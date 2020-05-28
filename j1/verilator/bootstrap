@@ -1,0 +1,11 @@
+set -e
+make
+
+python shell.py -p ../ -p ../swapforth/ -p ../swapforth/common <<END
+#include ../swapforth.fs
+#flash ../build/swapforth.hex
+#include ../swapforth/bringup.fs
+here .x
+#flash ../build/dazzler.hex
+#bye
+END

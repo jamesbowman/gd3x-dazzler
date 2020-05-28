@@ -1,0 +1,5 @@
+# make clean
+PATH=$PATH:$HOME/local/bin
+make -C .. &&
+make &&
+python shell.py -p ../ -p ../swapforth/common -p ../swapforth -p ../../anstests swapforth.fs # ../runtests.fs
