@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "Vj1a.h"
 #include "verilated_vcd_c.h"
+#include "verilator_version.h"
 
 int main(int argc, char **argv)
 {
@@ -20,7 +21,11 @@ int main(int argc, char **argv)
         fprintf(stderr, "invalid hex value at line %d\n", i + 1);
         exit(1);
       }
+#if VERSION == 3856
+      top->v__DOT__ram_prog[i] = v;
+#else
       top->j1a__DOT__ram_prog[i] = v;
+#endif
     }
 
     top->resetq = 0;
