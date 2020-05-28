@@ -21,7 +21,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "invalid hex value at line %d\n", i + 1);
         exit(1);
       }
-#if VERSION == 3856
+#if VERSION < 3884
       top->v__DOT__ram_prog[i] = v;
 #else
       top->j1a__DOT__ram_prog[i] = v;

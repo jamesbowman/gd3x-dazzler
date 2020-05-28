@@ -15,6 +15,7 @@ obj_dir/Vj1a obj_dir/Vj1a__ALL.a: $(VERILOGS) sim_main.cpp Makefile verilator_ve
 	$(MAKE) -C ..
 
 build/lib/python/vsimj1a.so: setup.py obj_dir/Vj1a__ALL.a vsim.cpp verilator_version.h
+	verilator --version
 	python setup.py install --home build
 
 clean:
