@@ -321,7 +321,7 @@ module top(
 
   input  wire P1,
   output wire P2,
-  input  wire P3,
+  output wire P3,
   input  wire P4,
   input  wire P5,
   input  wire P6,
@@ -373,6 +373,11 @@ module top(
 
   BUFG eveclkbufg (.I(PCLK), .O(eveclk));
   wire fclk = eveclk;
+
+  reg [10:0] eveclkdiv;
+  always @(posedge eveclk)
+    eveclkdiv <= eveclkdiv + 3'd1;
+  assign P3 = eveclkdiv[10];
 
   wire pclk;
   wire pllclk0, pllclk1, pllclk2;
