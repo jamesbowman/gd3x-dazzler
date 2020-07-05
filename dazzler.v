@@ -326,31 +326,30 @@ module top(
   input  wire P5,
   input  wire P6,
   inout  wire P7,
-  input  wire P8,
 
-  inout  wire P9,
-  input  wire P10,
+  inout  wire P8,
+  input  wire P9,
+  inout  wire P10,
   inout  wire P11,
-  inout  wire P12,
-  input  wire P13,
-  inout  wire P14,
-  input  wire P15,
+  input  wire P12,
+  inout  wire P13,
+  input  wire P14,
 
+  input  wire P15,
   input  wire P16,
   input  wire P17,
-  input  wire P18,
+  output wire P18,
   output wire P19,
   output wire P20,
-  output wire P21,
-  input  wire P22,
-  inout  wire P23,
+  input  wire P21,
+  inout  wire P22,
+  input  wire P23,
+  input  wire P24,
   input  wire P25,
   input  wire P26,
   input  wire P27,
   input  wire P28,
   input  wire P29,
-  input  wire P30,
-  input  wire P31,
 
   // output wire SD_2,
   // output wire SD_3,
@@ -437,7 +436,7 @@ module top(
   reg [20:0] counter;
   always @(posedge cfgclk)
     counter <= counter + 21'd1;
-  // assign P31 = counter[1];
+  // assign P29 = counter[1];
   // assign P7 = counter[1];
 
   wire [15:0] sample;
@@ -459,17 +458,17 @@ module top(
   wire [5:0] HSPI;
 
   wire [15:0] debug0 = {
-    P16,
-    P17,
     P15,
+    P16,
     P14,
-
     P13,
+
     P12,
     P11,
     P10,
-
     P9,
+
+    P8,
     P7,
     P6,
     P5,
@@ -482,22 +481,22 @@ module top(
     1'b0,
     1'b0,
     AUDIO,
-    P31,
-
-    P30,
     P29,
+
     P28,
     P27,
-
     P26,
     P25,
+
+    P24,
     P23,
     P22,
-
     P21,
+
     P20,
     P19,
-    P18
+    P18,
+    P17
     };
 
   wire bufpll_lock;
@@ -565,7 +564,7 @@ module top(
      .clk(clk50),
      .resetq(resetq),
      .baud(uart1_baud),
-     .uart_rx(P25),
+     .uart_rx(P23),
      .rd(uart1_rd),
      .valid(uart1_valid),
      .data(uart1_data));
@@ -586,12 +585,12 @@ module top(
     .O(ICAP_o),
     .BUSY(ICAP_busy));
 
-  wire [5:0] i2c_i = {P9, P10, P11, P12, P13, P14};
+  wire [5:0] i2c_i = {P8, P9, P10, P11, P12, P13};
   reg [5:0] i2c_o = 6'b111111;
-  assign P9   = i2c_o[5] ? 1'bz : 1'b0;
-  assign P11  = i2c_o[3] ? 1'bz : 1'b0;
-  assign P12  = i2c_o[2] ? 1'bz : 1'b0;
-  assign P14  = i2c_o[0] ? 1'bz : 1'b0;
+  assign P8   = i2c_o[5] ? 1'bz : 1'b0;
+  assign P10  = i2c_o[3] ? 1'bz : 1'b0;
+  assign P11  = i2c_o[2] ? 1'bz : 1'b0;
+  assign P13  = i2c_o[0] ? 1'bz : 1'b0;
 
   wire [15:0] spie0_rx;
   wire spie0_mosi, spie0_sck, spie0_idle;
@@ -754,43 +753,43 @@ module top(
   wire E_IO3, E_IO2;
   wire dummy0, dummy1;
 
-  assign HSPI = {    P27, P31, 3'b000,        P30};
+  assign HSPI = {    P25, P29, 3'b000,        P28};
   assign {CS, SCK, IO3, IO2, dummy0, MOSI} = MUX0[1] ? HSPI : DSPI;
   assign DSPI_MISO = MISO;
   assign {E_CS, E_SCK, E_IO3, E_IO2, dummy1, E_MOSI}  = MUX0[0] ? HSPI : CSPI;
   assign CSPI_MISO = E_MISO;
 
-  wire SD_CS = P28;
-  // assign {P21, P19, P20} = SD_CS ? 3'b111 : {1'b0, HSPI[4], HSPI[0]};
-  assign P21 = SD_CS;
-  assign P19 = HSPI[4];
-  assign P20 = HSPI[0];
+  wire SD_CS = P26;
+  // assign {P20, P18, P19} = SD_CS ? 3'b111 : {1'b0, HSPI[4], HSPI[0]};
+  assign P20 = SD_CS;
+  assign P18 = HSPI[4];
+  assign P19 = HSPI[0];
 
   assign E_PD = sysctl[0];
 
   reg hMISO;
   wire chMISO;
   always @*
-    if (P27 == 1'b0)
+    if (P25 == 1'b0)
       case (MUX0)
       2'b01: hMISO <= E_MISO;
       2'b10: hMISO <= MISO;
       default: hMISO <= 1'bz;
       endcase
-    else if (P28 == 1'b0)
-      hMISO <= P18;
-    else if (P29 == 1'b0)
+    else if (P26 == 1'b0)
+      hMISO <= P17;
+    else if (P27 == 1'b0)
       hMISO <= chMISO;
 
-  assign P23 = hMISO;
+  assign P22 = hMISO;
 
   wire SCKclock;
   BUFG _sck (.I(HSPI[4]), .O(SCKclock));
   reg [191:0] sup_sr;
   reg [7:0] sup_ix;
 
-  always @(posedge P29 or posedge SCKclock)
-    if (P29) begin
+  always @(posedge P27 or posedge SCKclock)
+    if (P27) begin
       sup_sr <= {WII2e, WII2, WII1e, WII1};
       sup_ix <= 0;
     end else begin
@@ -799,7 +798,7 @@ module top(
 
   assign chMISO = sup_sr[{sup_ix[7:3], ~sup_ix[2:0]}];
 
-  // assign SD_2 = P9;
+  // assign SD_2 = P8;
   // assign SD_3 = P6;
   // assign SD_5 = P4;
 
