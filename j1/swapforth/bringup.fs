@@ -211,8 +211,21 @@ create cmd.flash
     3 =
     2 passed ;
 
+: qevea ( a. )
+    idle >qpi dup >< >qpi >qpi ;
+    
 : check-eveq
-    false
+    CSPI 
+    REG_SPI_WIDTH eve! $2 >spi
+
+    REG_ID qevea
+    qpi> drop
+    qpi> $7c =
+
+    REG_SPI_WIDTH $80 or qevea
+    $00 >qpi idle
+
+    spi
     3 passed ;
 
 : eve-diag
@@ -392,42 +405,9 @@ create cmd.flash
     idle
 ;
 
-: pulse ( u )
-    $f and
-    dup SPIM! $10 or SPIM! ;
-
-: spidir $15 io! ;
-: qout $0 spidir ;
-: qin  $f spidir ;
-: spi  $2 spidir ;
-
-: >qpi ( u )
-    qout
-    dup 4 rshift pulse
-    pulse
-    ;
-
-: qpi> ( -- u )
-    qin
-    $f pulse SPIM@ $f and 4 lshift
-    $f pulse SPIM@ $f and or
-    ;
-
 : x
-    CSPI 0 MUX0
+    0 MUX0
     eve-start
     showid
     cr
-    REG_SPI_WIDTH eve! $2 >spi
-    idle
-
-    $0c >qpi
-    $00 >qpi
-    $00 >qpi
-
-    80 0 do
-        qpi> .x
-    loop
-
-    spi
     ;
