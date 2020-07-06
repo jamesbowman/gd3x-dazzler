@@ -39,6 +39,27 @@ variable spidev
 : spiw>     spi> spi> >< + ;
 : spid>     spiw> spiw> ;
 
+: pulse ( u )
+    $f and
+    dup SPIM! $10 or SPIM! ;
+
+: spidir $15 io! ;
+: qout $0 spidir ;
+: qin  $f spidir ;
+: spi  $2 spidir ;
+
+: >qpi ( u )
+    qout
+    dup 4 rshift pulse
+    pulse
+    ;
+
+: qpi> ( -- u )
+    qin
+    $f pulse SPIM@ $f and 4 lshift
+    $f pulse SPIM@ $f and or
+    ;
+
 : MUX0      $11 io! ;
 
 : host2 ( a b )     idle swap >spi >spi 0 >spi 40 ms ;
@@ -60,6 +81,7 @@ $2180 reg REG_TRIM
 $2574 reg REG_CMDB_SPACE
 $2578 reg REG_CMDB_WRITE
 $25f0 reg REG_FLASH_STATUS
+$2188 reg REG_SPI_WIDTH
 
 : evea ( a. - u )
     idle >spi dup >< >spi >spi ;
@@ -189,12 +211,17 @@ create cmd.flash
     3 =
     2 passed ;
 
+: check-eveq
+    false
+    3 passed ;
+
 : eve-diag
     eve-start
     cmd.bringup commands
     check-u2
     check-u4
     check-audio
+    check-eveq
     ;
 
 \ ------------------------------------------------------------
@@ -364,3 +391,43 @@ create cmd.flash
     $0000 y
     idle
 ;
+
+: pulse ( u )
+    $f and
+    dup SPIM! $10 or SPIM! ;
+
+: spidir $15 io! ;
+: qout $0 spidir ;
+: qin  $f spidir ;
+: spi  $2 spidir ;
+
+: >qpi ( u )
+    qout
+    dup 4 rshift pulse
+    pulse
+    ;
+
+: qpi> ( -- u )
+    qin
+    $f pulse SPIM@ $f and 4 lshift
+    $f pulse SPIM@ $f and or
+    ;
+
+: x
+    CSPI 0 MUX0
+    eve-start
+    showid
+    cr
+    REG_SPI_WIDTH eve! $2 >spi
+    idle
+
+    $0c >qpi
+    $00 >qpi
+    $00 >qpi
+
+    80 0 do
+        qpi> .x
+    loop
+
+    spi
+    ;
