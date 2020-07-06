@@ -314,8 +314,10 @@ module top(
   output wire TMDS_CLK_N,
 
   output wire E_SCK,
-  input  wire E_MISO,
-  output wire E_MOSI,
+  inout  wire E_MISO,
+  inout  wire E_MOSI,
+  inout  wire E_IO2,
+  inout  wire E_IO3,
   output wire E_CS,
   output wire E_PD,
 
@@ -616,7 +618,7 @@ module top(
     ((io_a[11:0] == 12'h002) ? {13'd0, i2c_i[2:0]} : 16'd0) | 
     ((io_a[11:0] == 12'h003) ? {13'd0, i2c_i[5:3]} : 16'd0) | 
     ((io_a[11:0] == 12'h00f) ? {14'd0, DSPI_MISO, 1'd0} : 16'd0) | 
-    ((io_a[11:0] == 12'h010) ? {14'd0, CSPI_MISO, 1'd0} : 16'd0) | 
+    ((io_a[11:0] == 12'h010) ? {12'd0, E_IO3, E_IO2, E_MISO, E_MOSI} : 16'd0) | 
     ((io_a[11:0] == 12'h012) ? {12'd0, ICAP_busy, ICAP_ctl} : 16'd0) | 
     ((io_a[11:0] == 12'h013) ? ICAP_o : 16'd0) | 
     ((io_a[11:0] == 12'h014) ? sysctl : 16'd0) | 
@@ -672,6 +674,8 @@ module top(
       ICAP_i <= io_wd;
     if (io_w & (io_a[11:0] == 12'h014))
       sysctl <= io_wd;
+    if (io_w & (io_a[11:0] == 12'h015))
+      CSPI_dir <= io_wd[3:0];
     if (io_w & (io_a[11:0] == 12'h018))
       probe <= io_wd;
   end
@@ -750,14 +754,21 @@ module top(
   // 5    4    3    2    1    0
   // CS   SCK  IO3  IO2  MISO MOSI
 
-  wire E_IO3, E_IO2;
-  wire dummy0, dummy1;
+  wire dummy0;
 
   assign HSPI = {    P25, P29, 3'b000,        P28};
   assign {CS, SCK, IO3, IO2, dummy0, MOSI} = MUX0[1] ? HSPI : DSPI;
   assign DSPI_MISO = MISO;
-  assign {E_CS, E_SCK, E_IO3, E_IO2, dummy1, E_MOSI}  = MUX0[0] ? HSPI : CSPI;
+  wire [5:0] eveM   = MUX0[0] ? HSPI : CSPI;
+  reg [3:0] CSPI_dir = 4'b0010;
+  assign {E_CS, E_SCK} = eveM[5:4];
+  assign E_IO3  = CSPI_dir[3] ? 1'bz : eveM[3];
+  assign E_IO2  = CSPI_dir[2] ? 1'bz : eveM[2];
+  assign E_MISO = CSPI_dir[1] ? 1'bz : eveM[1];
+  assign E_MOSI = CSPI_dir[0] ? 1'bz : eveM[0];
+
   assign CSPI_MISO = E_MISO;
+  
 
   wire SD_CS = P26;
   // assign {P20, P18, P19} = SD_CS ? 3'b111 : {1'b0, HSPI[4], HSPI[0]};

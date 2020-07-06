@@ -275,6 +275,20 @@ create cmd.flash
         .
     again ;
 
+: everlock
+    begin $18 io@ 4 rshift 3 <> until ;
+
+: dcnt
+    begin
+        cr $23 io@ $22 io@ d.
+    again ;
+
+: everdcnt
+    begin
+        $23 io@ $22 io@
+        1237499. d= 0=
+    until ;
+
 : play REG_SOUND eve! >spiw REG_PLAY eve! $1 >spi ;
 : x
     REG_SOUND eve! $44 >spi
