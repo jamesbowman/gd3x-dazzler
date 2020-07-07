@@ -20,6 +20,11 @@ variable spidev
     $20 SPIM!
 ;
 
+: spidir spidev @ $004 + io! ;
+: qout $0 spidir ;
+: qin  $f spidir ;
+: spi  $2 spidir ;
+
 : spix
     8 lshift
     8 0 do
@@ -42,11 +47,6 @@ variable spidev
 : pulse ( u )
     $f and
     dup SPIM! $10 or SPIM! ;
-
-: spidir $104 io! ;
-: qout $0 spidir ;
-: qin  $f spidir ;
-: spi  $2 spidir ;
 
 : >qpi ( u )
     qout
@@ -201,6 +201,23 @@ create cmd.flash
     1 passed
     ;
 
+: check-u4q
+    DSPI
+    $94 cmd
+    qout
+    $00 >qpi
+    $00 >qpi
+    $00 >qpi
+    $00 >qpi
+    qin
+    qpi> drop
+    qpi> drop
+    qpi> ><
+    qpi> + $ef16 =
+    spi
+    2 passed
+    ;
+
 : audio $17 io@ $2000 and 0<> 1 and ;
 
 : check-audio
@@ -209,7 +226,7 @@ create cmd.flash
         1 audio lshift or
     loop
     3 =
-    2 passed ;
+    3 passed ;
 
 : qevea ( a. )
     idle >qpi dup >< >qpi >qpi ;
@@ -226,13 +243,14 @@ create cmd.flash
     $00 >qpi idle
 
     spi
-    3 passed ;
+    4 passed ;
 
 : eve-diag
     eve-start
     cmd.bringup commands
     check-u2
     check-u4
+    check-u4q
     check-audio
     check-eveq
     ;
@@ -405,9 +423,3 @@ create cmd.flash
     idle
 ;
 
-: x
-    0 MUX0
-    eve-start
-    showid
-    cr
-    ;
