@@ -10,8 +10,8 @@ decimal
 \ CS   SCK  IO3  IO2  MISO MOSI
 
 variable spidev
-: CSPI  $10 spidev ! ;
-: DSPI  $0f spidev ! ;
+: CSPI  $100 spidev ! ;
+: DSPI  $110 spidev ! ;
 
 : SPIM@ spidev @ io@ ;
 : SPIM! spidev @ io! ;
@@ -43,7 +43,7 @@ variable spidev
     $f and
     dup SPIM! $10 or SPIM! ;
 
-: spidir $15 io! ;
+: spidir $104 io! ;
 : qout $0 spidir ;
 : qin  $f spidir ;
 : spi  $2 spidir ;

@@ -1,7 +1,6 @@
 : >spiw
-    begin $21 io@ until
-    8 flip
-    $20 io!
+    begin $103 io@ until
+    $102 io!
     ;
     
 : >spid $00 SPIM! swap >spiw >spiw ;
