@@ -300,7 +300,14 @@ module SPIengine(
 
 endmodule
 
+// `define DESIGN_1_1_0
+
 module top(
+`ifdef DESIGN_1_1_0
+  input  wire CLK,
+  output wire X1,
+`endif
+
   output wire CS,
   output wire SCK,
   inout  wire MOSI,   // IO0
@@ -373,6 +380,31 @@ module top(
   input wire AUDIO
 
   );
+
+`ifdef DESIGN_1_1_0
+
+  // Input CLK is 6 MHz.
+  // Scale by 66/32, giving 12.375 MHz input to BT815 on X1
+  // BT815 scales by 6 to give 74.25 MHz for HDMI 720p
+
+  DCM_CLKGEN #(
+  .CLKFX_MD_MAX(0.0),     // Specify maximum M/D ratio for timing anlysis
+  .CLKFX_DIVIDE(32),      // Divide value - D - (1-256)
+  .CLKFX_MULTIPLY(66),    // Multiply value - M - (2-256)
+
+  .CLKIN_PERIOD(20.00),   // Input clock period specified in nS
+  .STARTUP_WAIT("FALSE")  // Delay config DONE until DCM_CLKGEN LOCKED (TRUE/FALSE)
+  )
+  SYSCLK (
+  .CLKFX(X1),           // 1-bit output: Generated clock output
+  .CLKIN(CLK),            // 1-bit input: Input clock
+  .FREEZEDCM(0),          // 1-bit input: Prevents frequency adjustments to input clock
+  .PROGCLK(0),            // 1-bit input: Clock input for M/D reconfiguration
+  .PROGDATA(0),           // 1-bit input: Serial data input for M/D reconfiguration
+  .PROGEN(0),             // 1-bit input: Active high program enable
+  .RST(0)                 // 1-bit input: Reset input pin
+  );
+`endif
 
   wire eveclk;
 
