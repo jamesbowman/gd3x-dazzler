@@ -1,10 +1,3 @@
-: >spiw
-    begin $103 io@ until
-    $102 io!
-    ;
-    
-: >spid $00 SPIM! swap >spiw >spiw ;
-
 : e.cmd ( u ) $ff00 or s>d >spid ;
 
 : x
@@ -23,13 +16,13 @@ cursor cell+ constant cursorx
 : gaddr ( x y )
     >r
     gx um*
-    r> gy um* d+
+    r> gy * 0 d+
     fb d+ ;
 
-: caddr ( x y z )
-    >r >r
-    cx um* r> 2 um* d+ r> cz um* d+
-    cm d+ ;
+: caddr ( x y )
+    2* swap
+    cx * + 0
+    ;
 
 : /t
     0 mux0
@@ -63,23 +56,19 @@ cursor cell+ constant cursorx
     t.cr t.lf ;
 
 variable fg $ffff fg !
+variable bg $1082 bg !
 
 : drawch ( c )
     e.memcpy
     cursor 2@ gaddr >spid
     $20 - wh um* fm d+ >spid
-    wh s>d >spid
+    wh 0 >spid
 
-    e.memwrite
-    cursor 2@ 0 caddr >spid
-    2. >spid
-    fg @ 0 >spid
-
-    e.memwrite
-    cursor 2@ 1 caddr >spid
-    2. >spid
-    \ $1082. >spid
-    $0000. >spid
+    cursor 2@ caddr 2dup eve!
+    fg @ >spiw
+    cz m+ eve!
+    bg @ >spiw
+    stream
 
     right1
     ;
@@ -142,14 +131,17 @@ variable fg $ffff fg !
             s"  DAZZLER "
         then
         i 1359 * fg !
-        t.type $ea drawch t.cr t.lf
+        t.type t.cr t.lf
     loop
     ;
 
 : bench
-    t.home
-    1152 0 do
-        'x' drawch
-    loop ;
+    10 0 do
+        t.home
+        1000 0 do
+            'x' drawch
+        loop
+    loop
+    ;
 
 CSPI

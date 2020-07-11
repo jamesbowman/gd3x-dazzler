@@ -269,15 +269,17 @@ module SPIengine(
   input wire [15:0] tx,
   output wire [15:0] rx,
   output wire idle,
-  output wire SCK,
-  output wire MOSI,
-  input wire MISO
+  input wire [3:0] i,
+  output wire [5:0] o
   );
 
   reg running;
   reg [4:0] counter;
   reg [15:0] shifter;
   assign rx = shifter;
+
+  wire SCK, MOSI;
+  wire MISO = i[1];
 
   wire [15:0] txbe = {tx[7:0], tx[15:8]};
   always @(posedge clk) begin
@@ -298,6 +300,7 @@ module SPIengine(
   assign SCK = counter[0];
   assign idle = ~running;
 
+  assign o = {1'b0, SCK, 3'b00, MOSI};
 endmodule
 
 // `define DESIGN_1_1_0
@@ -630,26 +633,38 @@ module top(
   assign P11  = i2c_o[2] ? 1'bz : 1'b0;
   assign P13  = i2c_o[0] ? 1'bz : 1'b0;
 
-  wire [15:0] spie0_rx;
-  wire spie0_mosi, spie0_sck, spie0_idle;
+  wire [15:0] cspie_rx;
+  wire cspie_idle;
+  wire [5:0] CSPIe;
 
   SPIengine Ceng (
     .clk(clk50),
     .start8(io_w & (io_a[11:0] == 12'h101)),
     .start16(io_w & (io_a[11:0] == 12'h102)),
     .tx(io_wd),
-    .rx(spie0_rx),
-    .MISO(CSPI_MISO),
-    .MOSI(spie0_mosi),
-    .SCK(spie0_sck),
-    .idle(spie0_idle));
+    .rx(cspie_rx),
+    .i(CSPI_i),
+    .o(CSPIe),
+    .idle(cspie_idle));
 
-  wire CSPI_MISO, DSPI_MISO;
-  reg [5:0] CSPI0, DSPI;
+  wire [15:0] dspie_rx;
+  wire dspie_idle;
+  wire [5:0] DSPIe;
+  SPIengine Deng (
+    .clk(clk50),
+    .start8(io_w & (io_a[11:0] == 12'h111)),
+    .start16(io_w & (io_a[11:0] == 12'h112)),
+    .tx(io_wd),
+    .rx(dspie_rx),
+    .i(DSPI_i),
+    .o(DSPIe),
+    .idle(dspie_idle));
+
+  wire DSPI_MISO;
+  reg [5:0] CSPI0, DSPI0;
 
   // 5    4    3    2    1    0
   // CS   SCK  IO3  IO2  MISO MOSI
-  wire [5:0] CSPI = CSPI0 | {1'b0, spie0_sck, 3'b00, spie0_mosi};
 
   assign io_rd =
     ((io_a[11:0] == 12'h002) ? {13'd0, i2c_i[2:0]} : 16'd0) | 
@@ -664,12 +679,15 @@ module top(
     ((io_a[11:0] == 12'h019) ? {15'b0, uart1_valid} : 16'd0) | 
     ((io_a[11:0] == 12'h01a) ? {8'b0, uart1_data} : 16'd0) | 
 
-    ((io_a[11:0] == 12'h100) ? {12'd0, E_IO3, E_IO2, E_MISO, E_MOSI} : 16'd0) |   // CSPI
-    ((io_a[11:0] == 12'h101) ? spie0_rx : 16'd0) | 
-    ((io_a[11:0] == 12'h102) ? spie0_rx : 16'd0) | 
-    ((io_a[11:0] == 12'h103) ? {15'd0, spie0_idle} : 16'd0) | 
+    ((io_a[11:0] == 12'h100) ? {12'd0, CSPI_i} : 16'd0) |                         // CSPI
+    ((io_a[11:0] == 12'h101) ? cspie_rx : 16'd0) | 
+    ((io_a[11:0] == 12'h102) ? cspie_rx : 16'd0) | 
+    ((io_a[11:0] == 12'h103) ? {15'd0, cspie_idle} : 16'd0) | 
 
     ((io_a[11:0] == 12'h110) ? {12'd0, IO3, IO2, DSPI_MISO, MOSI} : 16'd0) |      // DSPI
+    ((io_a[11:0] == 12'h111) ? dspie_rx : 16'd0) | 
+    ((io_a[11:0] == 12'h112) ? dspie_rx : 16'd0) | 
+    ((io_a[11:0] == 12'h113) ? {15'd0, dspie_idle} : 16'd0) | 
 
     (io_a[12] ? {8'd0, uart0_data} : 16'd0) | 
     (io_a[13] ? {11'd0, 1'b0, 1'b0, 1'b0, uart0_valid, !uart0_busy} : 16'd0);
@@ -720,7 +738,7 @@ module top(
       CSPI_dir <= io_wd[3:0];
 
     if (io_w & (io_a[11:0] == 12'h110))
-      DSPI <= io_wd[5:0];
+      DSPI0 <= io_wd[5:0];
     if (io_w & (io_a[11:0] == 12'h114))
       DSPI_dir <= io_wd[5:0];
 
@@ -804,16 +822,16 @@ module top(
 
   assign HSPI = {    P25, P29, 3'b000,        P28};
 
-  wire [5:0] eveM   = MUX0[0] ? HSPI : CSPI;
+  wire [5:0] eveM   = MUX0[0] ? HSPI : (CSPI0 | CSPIe);
   reg [3:0] CSPI_dir = 4'b0010;
   assign {E_CS, E_SCK} = eveM[5:4];
   assign E_IO3  = CSPI_dir[3] ? 1'bz : eveM[3];
   assign E_IO2  = CSPI_dir[2] ? 1'bz : eveM[2];
   assign E_MISO = CSPI_dir[1] ? 1'bz : eveM[1];
   assign E_MOSI = CSPI_dir[0] ? 1'bz : eveM[0];
-  assign CSPI_MISO = E_MISO;
+  wire [3:0] CSPI_i = {E_IO3, E_IO2, E_MISO, E_MOSI};
 
-  wire [5:0] flashM = MUX0[1] ? HSPI : DSPI;
+  wire [5:0] flashM = MUX0[1] ? HSPI : (DSPI0 | DSPIe);
   reg [3:0] DSPI_dir = 4'b0010;
   assign {CS, SCK} = flashM[5:4];
   assign IO3  = DSPI_dir[3] ? 1'bz : flashM[3];
@@ -821,6 +839,7 @@ module top(
   assign MISO = DSPI_dir[1] ? 1'bz : flashM[1];
   assign MOSI = DSPI_dir[0] ? 1'bz : flashM[0];
   assign DSPI_MISO = MISO;
+  wire [3:0] DSPI_i = {IO3, IO2, MISO, MOSI};
 
   wire SD_CS = P26;
   // assign {P20, P18, P19} = SD_CS ? 3'b111 : {1'b0, HSPI[4], HSPI[0]};

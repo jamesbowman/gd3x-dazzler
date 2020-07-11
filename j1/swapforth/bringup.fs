@@ -9,22 +9,24 @@ decimal
 \ 5    4    3    2    1    0
 \ CS   SCK  IO3  IO2  MISO MOSI
 
-variable spidev
-: CSPI  $100 spidev ! ;
-: DSPI  $110 spidev ! ;
+variable spibase
+: rspi  spibase @ + ;
 
-: SPIM@ spidev @ io@ ;
-: SPIM! spidev @ io! ;
+: CSPI  $100 spibase ! ;
+: DSPI  $110 spibase ! ;
 
-: idle
-    $20 SPIM!
-;
+: SPIM@ spibase @ io@ ;
+: SPIM! spibase @ io! ;
 
-: spidir spidev @ $004 + io! ;
+: idle  $20 SPIM!  ;
+: sel   $20 SPIM! $00 SPIM! ;
+
+: spidir $4 rspi io! ;
 : qout $0 spidir ;
 : qin  $f spidir ;
 : spi  $2 spidir ;
 
+0 [IF]
 : spix
     8 lshift
     8 0 do
@@ -36,12 +38,30 @@ variable spidev
     loop
     2/
 ;
-
 : >spi      spix drop ;
-: >spiw     dup >spi >< >spi ;
-: >spid     swap >spiw >spiw ;
 : spi>      0 spix ;
+: >spiw     dup >spi >< >spi ;
 : spiw>     spi> spi> >< + ;
+[ELSE]
+: >spi
+    $1 rspi io!
+    begin $3 rspi io@ until
+    ;
+: spi>
+    $ff >spi
+    $1 rspi io@
+    ;
+: >spiw
+    $2 rspi io!
+    begin $3 rspi io@ until
+    ;
+: spiw>
+    $ffff >spiw
+    $2 rspi io@ ><
+    ;
+[THEN]
+
+: >spid     swap >spiw >spiw ;
 : spid>     spiw> spiw> ;
 
 : pulse ( u )
@@ -62,7 +82,7 @@ variable spidev
 
 : MUX0      $11 io! ;
 
-: host2 ( a b )     idle swap >spi >spi 0 >spi 40 ms ;
+: host2 ( a b )     sel swap >spi >spi 0 >spi 40 ms ;
 : host ( a )        0 host2 ;
 
 : reg
@@ -84,7 +104,7 @@ $25f0 reg REG_FLASH_STATUS
 $2188 reg REG_SPI_WIDTH
 
 : evea ( a. - u )
-    idle >spi dup >< >spi >spi ;
+    sel >spi dup >< >spi >spi ;
 
 : eve@ ( a. - u )
     evea
@@ -133,7 +153,7 @@ $2188 reg REG_SPI_WIDTH
     REG_FRAMES eve@ r> - u.
     ;
 
-: cmd ( x )         idle >spi ;
+: cmd ( x )         sel >spi ;
 : wcmd ( x )        $06 cmd cmd ;
 : status ( - x )    $05 cmd spi> ;
 : notbusy           begin status 1 and 0= until ;
@@ -229,7 +249,7 @@ create cmd.flash
     3 passed ;
 
 : qevea ( a. )
-    idle >qpi dup >< >qpi >qpi ;
+    sel >qpi dup >< >qpi >qpi ;
     
 : check-eveq
     CSPI 
@@ -415,7 +435,7 @@ create cmd.flash
     $20 io@ .x ;
 : x
     CSPI 0 MUX0
-    idle $00 SPIM!
+    sel
 
     $3020 y
     $0000 y
@@ -423,3 +443,31 @@ create cmd.flash
     idle
 ;
 
+: spix'
+    $1 rspi io!
+    begin $3 rspi io@ until
+    $1 rspi io@
+    ;
+
+: x
+    eve-start
+
+    CSPI 0 MUX0
+    spi
+    sel
+
+    10 0 do
+        cr $00 spix' .x
+    loop
+;
+
+: y
+    DSPI 0 MUX0
+    spi
+    sel
+
+    cr $9f spix' .x
+    cr $00 spix' .x
+    cr $00 spix' .x
+    cr $00 spix' .x
+;
