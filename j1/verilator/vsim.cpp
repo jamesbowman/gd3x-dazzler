@@ -7,6 +7,12 @@
 #endif
 #include "verilator_version.h"
 
+#if VERSION < 3884
+#define SIG(x) v##x
+#else
+#define SIG(x) j1a##x
+#endif
+
 #define PY_SSIZE_T_CLEAN
 #undef NDEBUG
 #include <Python.h>
@@ -31,7 +37,7 @@ typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
     Vj1a* dut;
-    int ddepth[4096], rdepth[4096];
+    unsigned int ddepth[4096], rdepth[4096];
 #if VCD
     VerilatedVcdC* tfp;
 #endif
@@ -61,11 +67,7 @@ Vj1a_init(v3 *self, PyObject *args, PyObject *kwds)
       fprintf(stderr, "invalid hex value at line %d\n", i + 1);
       exit(1);
     }
-#if VERSION < 3884
-    self->dut->v__DOT__ram_prog[i] = v;
-#else
-    self->dut->j1a__DOT__ram_prog[i] = v;
-#endif
+    self->dut->SIG(__DOT__ram_prog[i]) = v;
   }
   memset(self->rdepth, 0, sizeof(self->rdepth));
   memset(self->ddepth, 0, sizeof(self->ddepth));
@@ -131,11 +133,11 @@ static void cycle(v3* v)
   dut->clk = 1;
   dut->eval();
 
-  int pc = 4095 & dut->v__DOT___j1__DOT__pc;
-  if (dut->v__DOT___j1__DOT__dstack__DOT__depth > v->ddepth[pc])
-    v->ddepth[pc] = dut->v__DOT___j1__DOT__dstack__DOT__depth;
-  if (dut->v__DOT___j1__DOT__rstack__DOT__depth > v->rdepth[pc])
-    v->rdepth[pc] = dut->v__DOT___j1__DOT__rstack__DOT__depth;
+  int pc = 4095 & dut->SIG(__DOT___j1__DOT__pc);
+  if (dut->SIG(__DOT___j1__DOT__dstack__DOT__depth) > v->ddepth[pc])
+    v->ddepth[pc] = dut->SIG(__DOT___j1__DOT__dstack__DOT__depth);
+  if (dut->SIG(__DOT___j1__DOT__rstack__DOT__depth) > v->rdepth[pc])
+    v->rdepth[pc] = dut->SIG(__DOT___j1__DOT__rstack__DOT__depth);
 }
 
 PyObject *v3_read(PyObject *_, PyObject *args)

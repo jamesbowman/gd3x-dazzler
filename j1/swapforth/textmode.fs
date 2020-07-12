@@ -122,7 +122,7 @@ variable bg $1082 bg !
 
 : wave
     cls
-    1001000 0 do
+    H 0 do
         i 2000 * isin 50 m* nip 36 + t.x
         i 1 and if
             s" GAMEDUINO"
