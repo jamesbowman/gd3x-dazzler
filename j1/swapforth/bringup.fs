@@ -9,22 +9,23 @@ decimal
 \ 5    4    3    2    1    0
 \ CS   SCK  IO3  IO2  MISO MOSI
 
-variable spibase
-: rspi  spibase @ + ;
+: rspi  $777 + ;
+: CSPI  $8100 ['] rspi ! ;
+: DSPI  $8110 ['] rspi ! ;
 
-: CSPI  $100 spibase ! ;
-: DSPI  $110 spibase ! ;
+: rspi! ( u r )                 rspi io! ;
+: /spi/     $0 $5 rspi! ;
+: /qpi/     $1 $5 rspi! ;
+: /out/     $0 $4 rspi! ;
+: /in/      $1 $4 rspi! ;
 
-: SPIM@ spibase @ io@ ;
-: SPIM! spibase @ io! ;
-
+: SPIM@ 0 rspi io@ ;
+: SPIM! 0 rspi! ;
 : idle  $20 SPIM!  ;
 : sel   $20 SPIM! $00 SPIM! ;
 
-: spidir $4 rspi io! ;
-: qout $0 spidir ;
-: qin  $f spidir ;
-: spi  $2 spidir ;
+DSPI /spi/
+CSPI /spi/
 
 0 [IF]
 : spix
@@ -64,22 +65,6 @@ variable spibase
 : >spid     swap >spiw >spiw ;
 : spid>     spiw> spiw> ;
 
-: pulse ( u )
-    $f and
-    dup SPIM! $10 or SPIM! ;
-
-: >qpi ( u )
-    qout
-    dup 4 rshift pulse
-    pulse
-    ;
-
-: qpi> ( -- u )
-    qin
-    $f pulse SPIM@ $f and 4 lshift
-    $f pulse SPIM@ $f and or
-    ;
-
 : MUX0      $11 io! ;
 
 : host2 ( a b )     sel swap >spi >spi 0 >spi 40 ms ;
@@ -104,12 +89,10 @@ $25f0 reg REG_FLASH_STATUS
 $2188 reg REG_SPI_WIDTH
 
 : evea ( a. - u )
-    sel >spi dup >< >spi >spi ;
+    sel /out/ >spi >< >spiw ;
 
-: eve@ ( a. - u )
-    evea
-    spi> drop
-    spiw> ;
+: eve@ ( a. - u ) evea /in/ spi> drop spiw> ;
+
 : eve@. ( a. - d. )
     eve@ spiw> ;
 
@@ -224,17 +207,17 @@ create cmd.flash
 : check-u4q
     DSPI
     $94 cmd
-    qout
-    $00 >qpi
-    $00 >qpi
-    $00 >qpi
-    $00 >qpi
-    qin
-    qpi> drop
-    qpi> drop
-    qpi> ><
-    qpi> + $ef16 =
-    spi
+    /qpi/ /out/
+    $00 >spi
+    $00 >spi
+    $00 >spi
+    $00 >spi
+    /in/
+    spi> drop
+    spi> drop
+    spi> ><
+    spi> + $ef16 =
+    /spi/
     2 passed
     ;
 
@@ -248,21 +231,22 @@ create cmd.flash
     3 =
     3 passed ;
 
-: qevea ( a. )
-    sel >qpi dup >< >qpi >qpi ;
-    
-: check-eveq
+: /eve-qpi
     CSPI 
-    REG_SPI_WIDTH eve! $2 >spi
+    REG_SPI_WIDTH eve! $2 >spi /qpi/
+    ;
 
-    REG_ID qevea
-    qpi> drop
-    qpi> $7c =
+: /eve-spi
+    REG_SPI_WIDTH eve! $00 >spi idle /spi/
+    ;
 
-    REG_SPI_WIDTH $80 or qevea
-    $00 >qpi idle
+: check-eveq
+    /eve-qpi
 
-    spi
+    REG_ID eve@ $7c =
+
+    /eve-spi
+
     4 passed ;
 
 : eve-diag
@@ -429,45 +413,25 @@ create cmd.flash
 
 #include textmode.fs
 
-: y ( u )
-    $20 io!
-    begin $21 io@ until
-    $20 io@ .x ;
-: x
-    CSPI 0 MUX0
-    sel
-
-    $3020 y
-    $0000 y
-    $0000 y
-    idle
-;
-
-: spix'
-    $1 rspi io!
-    begin $3 rspi io@ until
-    $1 rspi io@
-    ;
-
-: x
-    eve-start
-
-    CSPI 0 MUX0
-    spi
-    sel
-
-    10 0 do
-        cr $00 spix' .x
-    loop
-;
-
-: y
-    DSPI 0 MUX0
-    spi
-    sel
-
-    cr $9f spix' .x
-    cr $00 spix' .x
-    cr $00 spix' .x
-    cr $00 spix' .x
-;
+\ : x
+\     CSPI 0 MUX0 /spi/
+\     \ eve-diag
+\     eve-start showid
+\     cr cr
+\     /eve-qpi
+\ 
+\     \ sel /out/
+\     \ $30 >spi
+\     \ $2000 >< >spiw
+\     \ /in/
+\     \ spi> .x
+\     \ spi> .x
+\     \ spi> .x
+\     cr REG_ID eve@-1 .x
+\     1. eve! $45 >spi sel
+\     cr REG_ID eve@-1 .x
+\     cr 1. eve@-1 .x
+\ 
+\     /eve-spi
+\     showid
+\ ;

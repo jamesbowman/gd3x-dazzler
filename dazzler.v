@@ -270,7 +270,10 @@ module SPIengine(
   output wire [15:0] rx,
   output wire idle,
   input wire [3:0] i,
-  output wire [5:0] o
+  output wire [5:0] o,
+  input wire d,
+  input wire q,
+  output wire [3:0] mask
   );
 
   reg running;
@@ -278,29 +281,28 @@ module SPIengine(
   reg [15:0] shifter;
   assign rx = shifter;
 
-  wire SCK, MOSI;
-  wire MISO = i[1];
-
+  wire [4:0] counterN = counter + (q ? 5'd4 : 5'd1);
   wire [15:0] txbe = {tx[7:0], tx[15:8]};
+
+  wire SCK = q ? counter[2] : counter[0];
+
   always @(posedge clk) begin
     if (start8)
       {running, counter, shifter} <= {1'b1, 5'd16, txbe};
     else if (start16)
       {running, counter, shifter} <= {1'b1, 5'd0, txbe};
     else if (running) begin
-      if (counter == 5'd31)
-        {running, counter} <= {1'b0, 5'd0};
-      else
-        {running, counter} <= {1'b1, counter + 5'd1};
-      if (counter[0])
-        shifter <= {shifter[14:0], MISO};
+      running <= ~(counterN == 5'd0);
+      counter <= counterN;
+      if (SCK)
+        shifter <= (q ? {shifter[11:0], i} : {shifter[14:0], i[1]});
     end
   end
-  assign MOSI = shifter[15];
-  assign SCK = counter[0];
   assign idle = ~running;
 
-  assign o = {1'b0, SCK, 3'b00, MOSI};
+  assign o = {1'b0, SCK, q ? shifter[15:12] : {3'b000, shifter[15]}};
+
+  assign mask = q ? {4{d}} : 4'b0010;
 endmodule
 
 // `define DESIGN_1_1_0
@@ -645,6 +647,9 @@ module top(
     .rx(cspie_rx),
     .i(CSPI_i),
     .o(CSPIe),
+    .d(CSPI_dir),
+    .q(CSPI_quad),
+    .mask(CSPI_mask),
     .idle(cspie_idle));
 
   wire [15:0] dspie_rx;
@@ -658,6 +663,9 @@ module top(
     .rx(dspie_rx),
     .i(DSPI_i),
     .o(DSPIe),
+    .d(DSPI_dir),
+    .q(DSPI_quad),
+    .mask(DSPI_mask),
     .idle(dspie_idle));
 
   wire DSPI_MISO;
@@ -735,12 +743,16 @@ module top(
     if (io_w & (io_a[11:0] == 12'h100))
       CSPI0 <= io_wd[5:0];
     if (io_w & (io_a[11:0] == 12'h104))
-      CSPI_dir <= io_wd[3:0];
+      CSPI_dir <= io_wd[0];
+    if (io_w & (io_a[11:0] == 12'h105))
+      CSPI_quad <= io_wd[0];
 
     if (io_w & (io_a[11:0] == 12'h110))
       DSPI0 <= io_wd[5:0];
     if (io_w & (io_a[11:0] == 12'h114))
-      DSPI_dir <= io_wd[5:0];
+      DSPI_dir <= io_wd[0];
+    if (io_w & (io_a[11:0] == 12'h115))
+      DSPI_quad <= io_wd[0];
 
   end
 
@@ -823,21 +835,23 @@ module top(
   assign HSPI = {    P25, P29, 3'b000,        P28};
 
   wire [5:0] eveM   = MUX0[0] ? HSPI : (CSPI0 | CSPIe);
-  reg [3:0] CSPI_dir = 4'b0010;
+  reg CSPI_dir, CSPI_quad;
+  wire [3:0] CSPI_mask;
   assign {E_CS, E_SCK} = eveM[5:4];
-  assign E_IO3  = CSPI_dir[3] ? 1'bz : eveM[3];
-  assign E_IO2  = CSPI_dir[2] ? 1'bz : eveM[2];
-  assign E_MISO = CSPI_dir[1] ? 1'bz : eveM[1];
-  assign E_MOSI = CSPI_dir[0] ? 1'bz : eveM[0];
+  assign E_IO3  = CSPI_mask[3] ? 1'bz : eveM[3];
+  assign E_IO2  = CSPI_mask[2] ? 1'bz : eveM[2];
+  assign E_MISO = CSPI_mask[1] ? 1'bz : eveM[1];
+  assign E_MOSI = CSPI_mask[0] ? 1'bz : eveM[0];
   wire [3:0] CSPI_i = {E_IO3, E_IO2, E_MISO, E_MOSI};
 
   wire [5:0] flashM = MUX0[1] ? HSPI : (DSPI0 | DSPIe);
-  reg [3:0] DSPI_dir = 4'b0010;
+  reg DSPI_dir, DSPI_quad;
+  wire [3:0] DSPI_mask;
   assign {CS, SCK} = flashM[5:4];
-  assign IO3  = DSPI_dir[3] ? 1'bz : flashM[3];
-  assign IO2  = DSPI_dir[2] ? 1'bz : flashM[2];
-  assign MISO = DSPI_dir[1] ? 1'bz : flashM[1];
-  assign MOSI = DSPI_dir[0] ? 1'bz : flashM[0];
+  assign IO3  = DSPI_mask[3] ? 1'bz : flashM[3];
+  assign IO2  = DSPI_mask[2] ? 1'bz : flashM[2];
+  assign MISO = DSPI_mask[1] ? 1'bz : flashM[1];
+  assign MOSI = DSPI_mask[0] ? 1'bz : flashM[0];
   assign DSPI_MISO = MISO;
   wire [3:0] DSPI_i = {IO3, IO2, MISO, MOSI};
 

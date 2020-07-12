@@ -1,4 +1,4 @@
-: e.cmd ( u ) $ff00 or s>d >spid ;
+: e.cmd ( u ) $ff00 or true >spid ;
 
 : x
     begin
@@ -28,7 +28,7 @@ cursor cell+ constant cursorx
     0 mux0
     1 playstream
 
-    CSPI
+    /eve-qpi
     stream
     ;
 
@@ -49,10 +49,9 @@ cursor cell+ constant cursorx
 
 : right1
     cursorx @ 1+
-    dup W <> if
-        cursorx ! exit
+    dup cursorx ! W <> if
+        exit
     then
-    drop
     t.cr t.lf ;
 
 variable fg $ffff fg !
@@ -123,7 +122,7 @@ variable bg $1082 bg !
 
 : wave
     cls
-    H 0 do
+    1001000 0 do
         i 2000 * isin 50 m* nip 36 + t.x
         i 1 and if
             s" GAMEDUINO"
