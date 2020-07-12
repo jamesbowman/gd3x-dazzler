@@ -3,7 +3,7 @@ set -e
 # ./smoke ; exit
 
 # python sine.py
-make -C j1
+make -C j1 build/dazzler.hex
 # make clean
 (
   . /data/Xilinx/14.7/ISE_DS/settings64.sh
