@@ -30,7 +30,7 @@ def oneframe(dut):
             v = dut.hdmi()
             # f.write("%08x\n" % v)
             ch = [v & 0x3ff, (v >> 10) & 0x3ff, (v >> 20) & 0x3ff]
-            d.datum(ch)
+            (d.datum(ch))
     d.im().save("out.png")
     print('done')
 

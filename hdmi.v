@@ -29,6 +29,33 @@ always @(posedge clk) TMDS <= VDE ? TMDS_data : TMDS_code;
 always @(posedge clk) balance_acc <= VDE ? balance_acc_new : 4'h0;
 endmodule
 
+module TERC4_encoder(
+    input wire [3:0] i,
+    output reg [9:0] o
+);
+
+always @*
+  case (i)
+    4'b0000: o = 10'b1010011100;
+    4'b0001: o = 10'b1001100011;
+    4'b0010: o = 10'b1011100100;
+    4'b0011: o = 10'b1011100010;
+    4'b0100: o = 10'b0101110001;
+    4'b0101: o = 10'b0100011110;
+    4'b0110: o = 10'b0110001110;
+    4'b0111: o = 10'b0100111100;
+    4'b1000: o = 10'b1011001100;
+    4'b1001: o = 10'b0100111001;
+    4'b1010: o = 10'b0110011100;
+    4'b1011: o = 10'b1011000110;
+    4'b1100: o = 10'b1010001110;
+    4'b1101: o = 10'b1001110001;
+    4'b1110: o = 10'b0101100011;
+    4'b1111: o = 10'b1011000011;
+  endcase
+
+endmodule
+
 
 ////////////////////////////////////////////////////////////////////////
 module HDMI_encoder_1(
@@ -71,7 +98,6 @@ module hdmi(
   assign {DE, HSYNC, VSYNC} = prepipe[10][2:0];
   reg HSYNC_;
   reg [10:0] hblank;
-  reg [9:0] y;
   always @(posedge clk) begin
     HSYNC_ <= HSYNC;
     if (~HSYNC_ & HSYNC)
@@ -85,8 +111,8 @@ module hdmi(
   wire video_guards   = ~DE & prepipe[8][2];
   wire video_preamble = ~DE & ~video_guards & prepipe[0][2];
   wire data_preamble  = ~DE & ~HSYNC & (hblank < 11'd8);
-  wire data_guard     = ((11'd8 <= hblank) & (hblank <= 11'd10)) | ((11'd42 <= hblank) & (hblank <= 11'd44));
-  wire data_island    = (11'd10 <= hblank) & (hblank <= 11'd42);
+  wire data_guard     = ((11'd8 <= hblank) & (hblank < 11'd10)) | ((11'd42 <= hblank) & (hblank < 11'd44));
+  wire data_island    = (11'd10 <= hblank) & (hblank < 11'd42);
 
   wire [9:0] dp0 = VSYNC ? 10'b0101010100 : 10'b1101010100;
   wire [9:0] dg0 = VSYNC ? 10'b0101100011 : 10'b1010001110;
@@ -96,7 +122,11 @@ module hdmi(
   wire [29:0] o2 =  30'b_1101010100_0010101011_1101010100;    // video preamble
   wire [29:0] o3 = {20'b_0010101011_0010101011, dp0};         // data preamble
   wire [29:0] o4 = {20'b_0100110011_0100110011, dg0};         // data guard
-  wire [29:0] o5 =  30'b_1010011100_1010011100_1010011100;    // TERC
+  wire [29:0] o5;                                             // TERC
+
+  TERC4_encoder _terc0 (.i({2'b10, VSYNC, HSYNC}), .o(o5[9:0]));
+  TERC4_encoder _terc1 (.i(4'd0), .o(o5[19:10]));
+  TERC4_encoder _terc2 (.i(4'd0), .o(o5[29:20]));
 
   HDMI_encoder_1 _e (.clk(clk), .dd1(prepipe[9]), .d(o0)); // has 1 clk latency, so use [9]
 
