@@ -125,6 +125,23 @@ PyObject *v3_profile(PyObject *self, PyObject *args)
   return r;
 }
 
+PyObject *v3_mockeve(PyObject *_, PyObject *args)
+{
+  v3 *self = (v3*)_;
+  unsigned int vsync, hsync, de, rgb;
+  if (!PyArg_ParseTuple(args, "IIII", &rgb, &de, &hsync, &vsync))
+    return NULL;
+  self->dut->mockeve_i = (rgb << 3) | (de << 2) | (hsync << 1) | (vsync);
+
+  Py_RETURN_NONE;
+}
+
+PyObject *v3_hdmi(PyObject *_, PyObject *args)
+{
+  v3 *self = (v3*)_;
+  return PyLong_FromLong(self->dut->hdmi);
+}
+
 static void cycle(v3* v)
 {
   Vj1a* dut = v->dut;
@@ -138,6 +155,13 @@ static void cycle(v3* v)
     v->ddepth[pc] = dut->SIG(__DOT___j1__DOT__dstack__DOT__depth);
   if (dut->SIG(__DOT___j1__DOT__rstack__DOT__depth) > v->rdepth[pc])
     v->rdepth[pc] = dut->SIG(__DOT___j1__DOT__rstack__DOT__depth);
+}
+
+PyObject *v3_cycle(PyObject *_, PyObject *args)
+{
+  v3 *self = (v3*)_;
+  cycle(self);
+  Py_RETURN_NONE;
 }
 
 PyObject *v3_read(PyObject *_, PyObject *args)
@@ -199,6 +223,9 @@ static PyMethodDef Vj1a_methods[] = {
     {"write", v3_write, METH_VARARGS},
     {"inWaiting", v3_inWaiting, METH_NOARGS},
     {"profile", v3_profile, METH_NOARGS},
+    {"mockeve", v3_mockeve, METH_VARARGS},
+    {"hdmi", v3_hdmi, METH_NOARGS},
+    {"cycle", v3_cycle, METH_NOARGS},
     {NULL}  /* Sentinel */
 };
 

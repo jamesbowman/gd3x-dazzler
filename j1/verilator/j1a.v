@@ -9,7 +9,9 @@ module j1a(input wire clk,
            output wire uart0_rd,
            output wire [7:0] uart_w,
            input wire uart0_valid,
-           input wire [7:0] uart0_data
+           input wire [7:0] uart0_data,
+           input wire [26:0] mockeve_i,
+           output wire [29:0] hdmi
 );
   wire io_rd, io_wr;
   wire [15:0] mem_addr;
@@ -84,4 +86,5 @@ module j1a(input wire clk,
     (io_addr_[12] ? {8'd0, uart0_data}                                  : 16'd0) |
     (io_addr_[13] ? {12'd0, 1'b0, 1'b0, uart0_valid, 1'b1} : 16'd0);
 
+  hdmi _hdmi (.clk(clk), .dd1(mockeve_i), .d(hdmi));
 endmodule

@@ -2,7 +2,7 @@ SUBDIRS=..
 
 all: obj_dir/Vj1a ../build/nuc.hex build/lib/python/vsimj1a.so
 
-VERILOGS=j1a.v ../../j1.v ../../stack2.v
+VERILOGS=j1a.v ../../j1.v ../../stack2.v ../../hdmi.v
 
 verilator_version.h: Makefile
 	(echo -n "#define VERSION " ; verilator --version|cut -d' ' -f2|sed 's/\.//') > verilator_version.h

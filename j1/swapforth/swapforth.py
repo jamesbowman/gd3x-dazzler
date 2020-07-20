@@ -288,6 +288,8 @@ class TetheredTarget:
                 for i in xrange(10000):
                     collect_screenshot("%04d.png" % i, ser)
                 ser.write(b'\r\n')
+        elif cmd.startswith('#'):
+            self.extra_command(cmd[1:])
         else:
             self.texlog(r"\underline{\textbf{%s}}" % cmd)
             self.texlog('\n')
