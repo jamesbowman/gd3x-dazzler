@@ -12,9 +12,9 @@ import vsimj1a
 sys.path.append("../swapforth")
 sys.path.append("../../../hdmi/")
 import swapforth
-import tv
 
 def oneframe(dut):
+    import tv
     def mock():
         for y in range(750):
             vsync = y < 5
