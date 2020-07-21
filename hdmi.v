@@ -126,10 +126,14 @@ module hdmi(
   assign {DE, HSYNC, VSYNC} = prepipe[10][2:0];
   reg HSYNC_;
   reg [10:0] hblank;
+  reg [5:0] y;
+  wire [5:0] yN = (y == 6'd44) ? 6'd0 : (y + 6'd1);
   always @(posedge clk) begin
     HSYNC_ <= HSYNC;
-    if (~HSYNC_ & HSYNC)
-      $display("DE edge %d", hblank);
+    if (~HSYNC_ & HSYNC) begin
+      // $display("DE edge %d", y);
+      y <= yN;
+    end
     if (HSYNC)
       hblank <= 0;
     else
@@ -168,8 +172,8 @@ module hdmi(
   wire [7:0] next_pecc = {1'b0, pec0[7:1]} ^ (((pec0[0] ^ bp1)) ? 8'b10000011 : 8'd0);
 
   terc4 _terc0 (.i({1'b1, bh, VSYNC, HSYNC}), .o(o5[9:0]));
-  terc4 _terc1 (.i({3'b000, bp0}), .o(o5[19:10]));
-  terc4 _terc2 (.i({3'b000, bp1}), .o(o5[29:20]));
+  terc4 _terc1 (.i({3'b000, bp0}),            .o(o5[19:10]));
+  terc4 _terc2 (.i({3'b000, bp1}),            .o(o5[29:20]));
 
   video_data _e (.clk(clk), .dd1(prepipe[9]), .d(o0)); // has 1 clk latency, so use [9]
 
@@ -189,18 +193,28 @@ module hdmi(
 
   always @(posedge clk) begin
     if (dib == 5'd31) begin
-      hecc <= 8'h00;
-      pkt_hdr <= 24'h0d0282;
-      pecc <= 8'h00;
-      pkt_bch <= 56'h00_04_00_08_00_63;
+      case (y)
+      6'd1:
+        begin
+          hecc <= 8'h00;
+          pkt_hdr <= 24'h0d0282;
+          pecc <= 8'h00;
+          pkt_bch <= 56'h00_04_00_08_00_63;
+        end
+      default:
+        begin
+          hecc <= 0;
+          pkt_hdr <= 0;
+          pecc <= 0;
+          pkt_bch <= 0;
+        end
+      endcase
     end else begin
       pkt_hdr <= {1'b0, pkt_hdr[23:1]};
       pkt_bch <= {2'b0, pkt_bch[55:2]};
+      hecc <= next_hecc;
+      pecc <= next_pecc;
     end
-
-    hecc <= next_hecc;
-    pecc <= next_pecc;
-    if (VSYNC) $display("%d: %x %x", dib, pkt_bch, pkt_hdr);
   end
 
 endmodule
