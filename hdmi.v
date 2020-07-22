@@ -125,7 +125,7 @@ module hdmi(
   wire DE, HSYNC, VSYNC;
   assign {DE, HSYNC, VSYNC} = prepipe[10][2:0];
   reg HSYNC_;
-  reg [10:0] hblank;
+  reg [10:0] x;
   reg [5:0] y;
   wire [5:0] yN = (y == 6'd44) ? 6'd0 : (y + 6'd1);
   always @(posedge clk) begin
@@ -135,9 +135,9 @@ module hdmi(
       y <= yN;
     end
     if (HSYNC)
-      hblank <= 0;
+      x <= 11'd22;
     else
-      hblank <= hblank + 1;
+      x <= x + 1;
   end
 
   reg [23:0] pkt_hdr;
@@ -148,10 +148,12 @@ module hdmi(
 
   wire video_guards   = ~DE & prepipe[8][2];
   wire video_preamble = ~DE & ~video_guards & prepipe[0][2];
-  wire data_preamble  = ~DE & ~HSYNC & (hblank < 11'd8);
-  wire data_guard     = ((11'd8 <= hblank) & (hblank < 11'd10)) | ((11'd42 <= hblank) & (hblank < 11'd44));
-  wire data_island    = (11'd10 <= hblank) & (hblank < 11'd42);
-  wire [4:0] dib = hblank[4:0] - 5'd10;
+  wire data_preamble  = ~DE & ~HSYNC & (x < 11'd30);
+  wire data_guard     = (x == 11'd30) |
+                        (x == 11'd31) |
+                        (x == 11'd64) |
+                        (x == 11'd65);
+  wire data_island    = (11'd32 <= x) & (x < 11'd64);
 
   wire [9:0] dp0 = VSYNC ? 10'b0101010100 : 10'b1101010100;
   wire [9:0] dg0 = VSYNC ? 10'b0101100011 : 10'b1010001110;
@@ -163,11 +165,11 @@ module hdmi(
   wire [29:0] o4 = {20'b_0100110011_0100110011, dg0};         // data guard
   wire [29:0] o5;                                             // TERC
 
-  wire bh = &dib[4:3] ? hecc[0] : pkt_hdr[0];
+  wire bh = &x[4:3] ? hecc[0] : pkt_hdr[0];
   wire [7:0] next_hecc = {1'b0, hecc[7:1]} ^ (((hecc[0] ^ bh)) ? 8'b10000011 : 8'd0);
 
-  wire bp0 = &dib[4:2] ? pecc[0] : pkt_bch[0];
-  wire bp1 = &dib[4:2] ? pecc[1] : pkt_bch[1];
+  wire bp0 = &x[4:2] ? pecc[0] : pkt_bch[0];
+  wire bp1 = &x[4:2] ? pecc[1] : pkt_bch[1];
   wire [7:0] pec0      = {1'b0, pecc[7:1]} ^ (((pecc[0] ^ bp0)) ? 8'b10000011 : 8'd0);
   wire [7:0] next_pecc = {1'b0, pec0[7:1]} ^ (((pec0[0] ^ bp1)) ? 8'b10000011 : 8'd0);
 
@@ -192,7 +194,7 @@ module hdmi(
       d = o0;
 
   always @(posedge clk) begin
-    if (dib == 5'd31) begin
+    if (x[4:0] == 5'd31) begin
       case (y)
       6'd1:
         begin
