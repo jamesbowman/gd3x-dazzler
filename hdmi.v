@@ -151,9 +151,9 @@ module hdmi(
   wire data_preamble  = ~DE & ~HSYNC & (x < 11'd30);
   wire data_guard     = (x == 11'd30) |
                         (x == 11'd31) |
-                        (x == 11'd64) |
-                        (x == 11'd65);
-  wire data_island    = (11'd32 <= x) & (x < 11'd64);
+                        (x == 11'd128) |
+                        (x == 11'd129);
+  wire data_island    = (11'd32 <= x) & (x < 11'd128);
 
   wire [9:0] dp0 = VSYNC ? 10'b0101010100 : 10'b1101010100;
   wire [9:0] dg0 = VSYNC ? 10'b0101100011 : 10'b1010001110;
@@ -173,9 +173,10 @@ module hdmi(
   wire [7:0] pec0      = {1'b0, pecc[7:1]} ^ (((pecc[0] ^ bp0)) ? 8'b10000011 : 8'd0);
   wire [7:0] next_pecc = {1'b0, pec0[7:1]} ^ (((pec0[0] ^ bp1)) ? 8'b10000011 : 8'd0);
 
+  reg dup4 = 0;     // Audio clock packet duplicates the data 4 times
   terc4 _terc0 (.i({1'b1, bh, VSYNC, HSYNC}), .o(o5[9:0]));
-  terc4 _terc1 (.i({3'b000, bp0}),            .o(o5[19:10]));
-  terc4 _terc2 (.i({3'b000, bp1}),            .o(o5[29:20]));
+  terc4 _terc1 (.i({dup4 ? {3{bp0}} : 3'b000, bp0}), .o(o5[19:10]));
+  terc4 _terc2 (.i({dup4 ? {3{bp1}} : 3'b000, bp1}), .o(o5[29:20]));
 
   video_data _e (.clk(clk), .dd1(prepipe[9]), .d(o0)); // has 1 clk latency, so use [9]
 
@@ -195,21 +196,45 @@ module hdmi(
 
   always @(posedge clk) begin
     if (x[4:0] == 5'd31) begin
-      case (y)
-      6'd1:
-        begin
-          hecc <= 8'h00;
-          pkt_hdr <= 24'h0d0282;
-          pecc <= 8'h00;
-          pkt_bch <= 56'h00_04_00_08_00_63;
-        end
+      case (x[10:5])
+
+      6'd2:
+        case (y)
+        6'd0:
+          begin
+            hecc <= 8'h00;
+            pkt_hdr <= 24'h000001;
+            pecc <= 8'h00;
+            pkt_bch <= 56'h18_00_0a_22_01_00;
+            dup4 <= 1;
+          end
+        6'd1:
+          begin
+            hecc <= 8'h00;
+            pkt_hdr <= 24'h0d0282;
+            pecc <= 8'h00;
+            pkt_bch <= 56'h00_04_00_08_00_63;
+            dup4 <= 0;
+          end
+        default:
+          begin
+            hecc <= 0;
+            pkt_hdr <= 0;
+            pecc <= 0;
+            pkt_bch <= 0;
+            dup4 <= 0;
+          end
+        endcase
+
       default:
         begin
           hecc <= 0;
           pkt_hdr <= 0;
           pecc <= 0;
           pkt_bch <= 0;
+          dup4 <= 0;
         end
+
       endcase
     end else begin
       pkt_hdr <= {1'b0, pkt_hdr[23:1]};
