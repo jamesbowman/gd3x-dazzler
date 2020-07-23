@@ -107,6 +107,11 @@ module hdmi(
   input  wire [26:0] dd1,
   output reg [29:0] d);
 
+  reg running;
+  always @(posedge clk) begin
+    running <= running | dd1[0];  // come to life as soon as VSYNC==1
+  end
+
   reg [26:0] prepipe [0:10];
   always @(posedge clk) begin
     prepipe[0] <= dd1;
@@ -194,10 +199,43 @@ module hdmi(
     else
       d = o0;
 
+
+  wire [7:0] csb;
+  wire [7:0] csbN = (csb == 8'd191) ? 8'd0 : (csb + 8'd1);
+
+  wire [15:0] lsample, rsample;
+  wire [15:0] lsampleN = lsample + 16'h0137, rsampleN = rsample + 16'h9471;
+  
+  reg [39:0] audio_state = {16'h2222, 16'h1111, 8'd0};
+  assign {rsample, lsample, csb} = audio_state;
+  wire [39:0] audio_stateN = {rsampleN, lsampleN, csbN};
+
+  wire [191:0] csbL = 192'h000000000000000000000000000000000000000202100004;
+  wire [191:0] csbR = 192'h000000000000000000000000000000000000000202200004;
+  wire Cl = csbL[csb], Cr = csbR[csb];
+  wire Pl = ^{lsample, Cl}, Pr = ^{rsample, Cr};
+  wire [55:0] audio_packet = {
+    Pr, Cr, 2'b00, Pl, Cl, 2'b00,
+    rsample,
+    8'h00,
+    lsample,
+    8'h00
+    };
+
   always @(posedge clk) begin
-    if (x[4:0] == 5'd31) begin
+    if (running & (x[4:0] == 5'd31)) begin
       case (x[10:5])
 
+      6'd0, 6'd1:
+        begin
+          hecc <= 8'h00;
+          pkt_hdr <= {3'b000, (csb == 0), 4'b0, 16'h0102};
+          pecc <= 8'h00;
+          pkt_bch <= audio_packet;
+          dup4 <= 0;
+          audio_state <= audio_stateN;
+        end
+        
       6'd2:
         case (y)
         6'd0:
