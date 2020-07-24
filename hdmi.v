@@ -105,7 +105,9 @@ endmodule
 module hdmi(
   input  wire clk,
   input  wire [26:0] dd1,
-  output reg [29:0] d);
+  output reg [29:0] d,
+  input  wire audio_w,
+  input  wire [31:0] audio);
 
   reg running;
   always @(posedge clk) begin
@@ -200,15 +202,25 @@ module hdmi(
       d = o0;
 
 
+  wire audio_read = running & (x[4:0] == 5'd31) & (x[10:5] <= 6'd1);
   wire [7:0] csb;
   wire [7:0] csbN = (csb == 8'd191) ? 8'd0 : (csb + 8'd1);
 
   wire [15:0] lsample, rsample;
   wire [15:0] lsampleN = lsample + 16'h0137, rsampleN = rsample + 16'h9471;
   
-  reg [39:0] audio_state = {16'h2222, 16'h1111, 8'd0};
+  localparam int STSZ = 16 + 16 + 8;
+  reg [STSZ - 1:0] audio_state = {16'h2222, 16'h1111, 8'd0};
+  reg [STSZ - 1:0] audio_stateN;
   assign {rsample, lsample, csb} = audio_state;
-  wire [39:0] audio_stateN = {rsampleN, lsampleN, csbN};
+
+  always @*
+    audio_stateN = {rsampleN, lsampleN, csbN};
+
+  always @(posedge clk) begin
+    if (audio_read) //  | audio_w)
+      audio_state <= audio_stateN;
+  end
 
   wire [191:0] csbL = 192'h000000000000000000000000000000000000000202100004;
   wire [191:0] csbR = 192'h000000000000000000000000000000000000000202200004;
@@ -233,7 +245,6 @@ module hdmi(
           pecc <= 8'h00;
           pkt_bch <= audio_packet;
           dup4 <= 0;
-          audio_state <= audio_stateN;
         end
         
       6'd2:
