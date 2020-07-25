@@ -96,11 +96,10 @@ include core-ext.fs
 ;
 
 : ms
+    2*
     0 ?do
         $15 io@
-        begin
-            $15 io@ over - 50000 u>
-        until
+        begin $15 io@ over - 25000 u> until
         drop
     loop
 ;

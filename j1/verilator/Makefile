@@ -11,7 +11,7 @@ verilator_version.h: Makefile
 	(echo -n "#define VERSION " ; verilator --version|cut -d' ' -f2|sed 's/\.//') > verilator_version.h
 
 obj_dir/Vj1a obj_dir/Vj1a__ALL.a: $(VERILOGS) sim_main.cpp Makefile verilator_version.h
-	verilator -Wall --cc -DVERILATOR=1 $(VERILOGS) --top-module j1a --exe sim_main.cpp
+	verilator -Wall --cc -DVERILATOR=1 $(VERILOGS) --top-module j1a --exe # sim_main.cpp
 	$(MAKE) -C obj_dir CXXFLAGS="-fPIC -O3" OPT_FAST="-O2" -f Vj1a.mk Vj1a
 
 ../build/nuc.hex:

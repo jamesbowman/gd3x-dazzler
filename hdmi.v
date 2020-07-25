@@ -21,8 +21,18 @@ module tmds(
     {3'b000, VD[6]} +
     {3'b000, VD[7]};
   wire XNOR = (Nb1s > 4'd4) || (Nb1s == 4'd4 && VD[0] == 1'b0);
-  reg [8:0] q_m;
-  always @(posedge clk) q_m <= {~XNOR, q_m[6:0] ^ VD[7:1] ^ {7{XNOR}}, VD[0]};
+  /* verilator lint_off UNOPTFLAT */
+  wire [8:0] q_m;
+  /* verilator lint_on UNOPTFLAT */
+  assign q_m[0] = VD[0];
+  assign q_m[1] = q_m[0] ^ VD[1] ^ XNOR;
+  assign q_m[2] = q_m[1] ^ VD[2] ^ XNOR;
+  assign q_m[3] = q_m[2] ^ VD[3] ^ XNOR;
+  assign q_m[4] = q_m[3] ^ VD[4] ^ XNOR;
+  assign q_m[5] = q_m[4] ^ VD[5] ^ XNOR;
+  assign q_m[6] = q_m[5] ^ VD[6] ^ XNOR;
+  assign q_m[7] = q_m[6] ^ VD[7] ^ XNOR;
+  assign q_m[8] = ~XNOR;
 
   reg [3:0] balance_acc = 0;
   wire [3:0] balance =
@@ -208,7 +218,7 @@ module hdmi(
   wire [7:0] csbN = (csb == 8'd191) ? 8'd0 : (csb + 8'd1);
 
   
-  localparam int STSZ = 2 + 16 + 16 + 16 + 16 + 8;
+  localparam STSZ = 2 + 16 + 16 + 16 + 16 + 8;
   reg [STSZ - 1:0] audio_state = {2'd0, 32'd0, 16'h2222, 16'h1111, 8'd0};
   reg [STSZ - 1:0] audio_stateN;
   wire [1:0] fullness;
@@ -241,7 +251,6 @@ module hdmi(
     audio_state <= audio_stateN;
     if (audio_r) begin
       audio_have <= (fullness != 2'd0);
-      $display("%d", audio_have);
       {rsample, lsample} <= sample0;
     end
   end

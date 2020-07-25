@@ -113,7 +113,8 @@ $2188 reg REG_SPI_WIDTH
     CSPI
 
     $61 $46 host2
-    $48     host
+    $44     host        \ external clock
+\   $48     host        \ internal clock
     $00     host
 
     200 ms
@@ -135,6 +136,13 @@ $2188 reg REG_SPI_WIDTH
     REG_CLOCK eve@. 2swap d- $7fff and d.
     REG_FRAMES eve@ r> - u.
     ;
+
+: eve-frames ( u )
+    REG_FRAMES eve@ +
+    begin
+        dup REG_FRAMES eve@ =
+    until
+    drop ;
 
 : cmd ( x )         sel >spi ;
 : wcmd ( x )        $06 cmd cmd ;

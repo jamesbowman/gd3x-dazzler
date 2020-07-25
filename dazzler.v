@@ -1,5 +1,30 @@
 `default_nettype none
 
+module TMDS_encoderA(
+	input wire clk,
+	input wire [7:0] VD,  // video data (red, green or blue)
+	input wire [1:0] CD,  // control data
+	input wire VDE,  // video data enable, to choose between CD (when VDE=0) and VD (when VDE=1)
+	output reg [9:0] TMDS = 0
+);
+
+wire [3:0] Nb1s = VD[0] + VD[1] + VD[2] + VD[3] + VD[4] + VD[5] + VD[6] + VD[7];
+wire XNOR = (Nb1s>4'd4) || (Nb1s==4'd4 && VD[0]==1'b0);
+wire [8:0] q_m = {~XNOR, q_m[6:0] ^ VD[7:1] ^ {7{XNOR}}, VD[0]};
+
+reg [3:0] balance_acc = 0;
+wire [3:0] balance = q_m[0] + q_m[1] + q_m[2] + q_m[3] + q_m[4] + q_m[5] + q_m[6] + q_m[7] - 4'd4;
+wire balance_sign_eq = (balance[3] == balance_acc[3]);
+wire invert_q_m = (balance==0 || balance_acc==0) ? ~q_m[8] : balance_sign_eq;
+wire [3:0] balance_acc_inc = balance - ({q_m[8] ^ ~balance_sign_eq} & ~(balance==0 || balance_acc==0));
+wire [3:0] balance_acc_new = invert_q_m ? balance_acc-balance_acc_inc : balance_acc+balance_acc_inc;
+wire [9:0] TMDS_data = {invert_q_m, q_m[8], q_m[7:0] ^ {8{invert_q_m}}};
+wire [9:0] TMDS_code = CD[1] ? (CD[0] ? 10'b1010101011 : 10'b0101010100) : (CD[0] ? 10'b0010101011 : 10'b1101010100);
+
+always @(posedge clk) TMDS <= VDE ? TMDS_data : TMDS_code;
+always @(posedge clk) balance_acc <= VDE ? balance_acc_new : 4'h0;
+endmodule
+
 module HDMI_encoder_1(
   input  wire [26:0] dd1,
   input  wire pclk,
@@ -305,7 +330,7 @@ module SPIengine(
   assign mask = q ? {4{d}} : 4'b0010;
 endmodule
 
-// `define DESIGN_1_1_0
+`define DESIGN_1_1_0
 
 module top(
 `ifdef DESIGN_1_1_0
@@ -457,18 +482,27 @@ module top(
   STARTUP_SPARTAN6 _startup_startan6(
     .CFGMCLK(cfgclk));
 
-  wire clk50;
+  reg cpuclk_sel = 0;
+  wire s_cpuclk;
+  BUFGMUX cpuclk_mux(
+    .I0(cfgclk),
+    .I1(pclk),
+    .S(cpuclk_sel),
+    .O(s_cpuclk)
+  );
+
+  wire cpuclk;
   DCM_CLKGEN #(
   .CLKFX_MD_MAX(0.0),     // Specify maximum M/D ratio for timing anlysis
-  .CLKFX_DIVIDE(50),      // Divide value - D - (1-256)
-  .CLKFX_MULTIPLY(50),    // Multiply value - M - (2-256)
+  .CLKFX_DIVIDE(2),       // Divide value - D - (1-256)
+  .CLKFX_MULTIPLY(2),     // Multiply value - M - (2-256)
 
-  .CLKIN_PERIOD(20.00),   // Input clock period specified in nS
+  .CLKIN_PERIOD(13.00),   // Input clock period specified in nS
   .STARTUP_WAIT("FALSE")  // Delay config DONE until DCM_CLKGEN LOCKED (TRUE/FALSE)
   )
   DCM_CLKGEN_inst (
-  .CLKFX(clk50),           // 1-bit output: Generated clock output
-  .CLKIN(cfgclk),            // 1-bit input: Input clock
+  .CLKFX(cpuclk),         // 1-bit output: Generated clock output
+  .CLKIN(s_cpuclk),       // 1-bit input: Input clock
   .FREEZEDCM(0),          // 1-bit input: Prevents frequency adjustments to input clock
   .PROGCLK(0),            // 1-bit input: Clock input for M/D reconfiguration
   .PROGDATA(0),           // 1-bit input: Serial data input for M/D reconfiguration
@@ -558,7 +592,7 @@ module top(
 
   reg [15:0] brktimer = 0;
   wire softresetq = ~(&brktimer);
-  always @(posedge clk50)
+  always @(posedge cpuclk)
     if (uart_in)
       brktimer <= 0;
     else if (softresetq)
@@ -568,7 +602,7 @@ module top(
   wire [15:0] io_a, io_wd, io_rd;
   wire io_r, io_w;
   cpu _cpu (
-    .clk(clk50),
+    .clk(cpuclk),
     .resetq(resetq),
     .io_a(io_a),
     .io_wd(io_wd),
@@ -582,11 +616,13 @@ module top(
 
   wire uart0_valid, uart0_busy;
   wire [7:0] uart0_data;
+  reg [31:0] clkfreq = cpuclk_sel ? 32'd72000000 : 32'd50000000;
   reg [31:0] uart0_baud = 32'd1000000;
 
-  buart #(.CLKFREQ(50 * 1000000)) _uart0 (
-     .clk(clk50),
+  buart _uart0 (
+     .clk(cpuclk),
      .resetq(resetq),
+     .clkfreq(clkfreq),
      .baud(uart0_baud),
      .rx(uart_in),
      .tx(uart_out),
@@ -603,17 +639,18 @@ module top(
 
   assign uart1_rd = io_r & io_a[11:0] == 12'h01a;
 
-  rxuart #(.CLKFREQ(50 * 1000000)) _uart1 (
-     .clk(clk50),
+  rxuart  _uart1 (
+     .clk(cpuclk),
      .resetq(resetq),
      .baud(uart1_baud),
+     .clkfreq(clkfreq),
      .uart_rx(P23),
      .rd(uart1_rd),
      .valid(uart1_valid),
      .data(uart1_data));
 
   reg [15:0] ticks;
-  always @(posedge clk50)
+  always @(posedge cpuclk)
     ticks <= ticks + 1;
 
   reg [2:0] ICAP_ctl;
@@ -640,7 +677,7 @@ module top(
   wire [5:0] CSPIe;
 
   SPIengine Ceng (
-    .clk(clk50),
+    .clk(cpuclk),
     .start8(io_w & (io_a[11:0] == 12'h101)),
     .start16(io_w & (io_a[11:0] == 12'h102)),
     .tx(io_wd),
@@ -656,7 +693,7 @@ module top(
   wire dspie_idle;
   wire [5:0] DSPIe;
   SPIengine Deng (
-    .clk(clk50),
+    .clk(cpuclk),
     .start8(io_w & (io_a[11:0] == 12'h111)),
     .start16(io_w & (io_a[11:0] == 12'h112)),
     .tx(io_wd),
@@ -710,7 +747,7 @@ module top(
   // 5    4    3    2    1    0
   // CS   SCK  IO3  IO2  MISO MOSI
 
-  always @(posedge clk50) begin
+  always @(posedge cpuclk) begin
     if (io_w & (io_a[11:0] == 12'h002))
       i2c_o[2:0] <= io_wd[2:0];
     if (io_w & (io_a[11:0] == 12'h003))
@@ -739,6 +776,9 @@ module top(
       sysctl <= io_wd;
     if (io_w & (io_a[11:0] == 12'h018))
       probe <= io_wd;
+
+    if (io_w & (io_a[11:0] == 12'h080))
+      cpuclk_sel <= io_wd[0];
 
     if (io_w & (io_a[11:0] == 12'h100))
       CSPI0 <= io_wd[5:0];
@@ -782,21 +822,163 @@ module top(
   always @(posedge pclk)
     sample3 <= (sample3 + 1) & 16'h00ff;
 
-  wire [29:0] d0;
-  HDMI_encoder_1 e1(
-    .dd1(dd1),
-    .pclk(pclk),
-    .d(d0));
-  wire [29:0] d1;
-  HDMIDirectV _v (
-	.pixclk(pclk),
-        .resetq(E_PD),
-	.videobus(dd1[26:3]),
-        .insample(sample2),
-        .d(d1)
-        );
+  // Generate audio samples at 48000 KHz
+  reg [31:0] d = 0;
+  wire [31:0] dInc = d[31] ? (48000) : (48000 - 74250000);
+  wire [31:0] dN = d + dInc;
+  always @(posedge pclk)
+  begin
+    d <= dN;
+  end 
+  wire audio_w = ~d[31];
 
-// `define DEBUG_LVDS
+  reg [15:0] sampleL = 16'h1111, sampleR = 16'h2222;
+  always @(posedge pclk)
+    if (audio_w) begin
+      sampleL <= sampleL + 16'haa;
+      sampleR <= sampleR + 16'hbb;
+    end
+
+  reg [6:0] th;
+  reg [15:0] sa;
+  always @(posedge pclk)
+    if (audio_w)
+      th <= th + 7'd1;
+  always @*
+    case (th)
+7'h00: sa = 16'h0000;
+7'h01: sa = 16'h0647;
+7'h02: sa = 16'h0c8b;
+7'h03: sa = 16'h12c7;
+7'h04: sa = 16'h18f8;
+7'h05: sa = 16'h1f19;
+7'h06: sa = 16'h2527;
+7'h07: sa = 16'h2b1e;
+7'h08: sa = 16'h30fb;
+7'h09: sa = 16'h36b9;
+7'h0a: sa = 16'h3c56;
+7'h0b: sa = 16'h41cd;
+7'h0c: sa = 16'h471c;
+7'h0d: sa = 16'h4c3f;
+7'h0e: sa = 16'h5133;
+7'h0f: sa = 16'h55f4;
+7'h10: sa = 16'h5a81;
+7'h11: sa = 16'h5ed6;
+7'h12: sa = 16'h62f1;
+7'h13: sa = 16'h66ce;
+7'h14: sa = 16'h6a6c;
+7'h15: sa = 16'h6dc9;
+7'h16: sa = 16'h70e1;
+7'h17: sa = 16'h73b5;
+7'h18: sa = 16'h7640;
+7'h19: sa = 16'h7883;
+7'h1a: sa = 16'h7a7c;
+7'h1b: sa = 16'h7c29;
+7'h1c: sa = 16'h7d89;
+7'h1d: sa = 16'h7e9c;
+7'h1e: sa = 16'h7f61;
+7'h1f: sa = 16'h7fd7;
+7'h20: sa = 16'h7fff;
+7'h21: sa = 16'h7fd7;
+7'h22: sa = 16'h7f61;
+7'h23: sa = 16'h7e9c;
+7'h24: sa = 16'h7d89;
+7'h25: sa = 16'h7c29;
+7'h26: sa = 16'h7a7c;
+7'h27: sa = 16'h7883;
+7'h28: sa = 16'h7640;
+7'h29: sa = 16'h73b5;
+7'h2a: sa = 16'h70e1;
+7'h2b: sa = 16'h6dc9;
+7'h2c: sa = 16'h6a6c;
+7'h2d: sa = 16'h66ce;
+7'h2e: sa = 16'h62f1;
+7'h2f: sa = 16'h5ed6;
+7'h30: sa = 16'h5a81;
+7'h31: sa = 16'h55f4;
+7'h32: sa = 16'h5133;
+7'h33: sa = 16'h4c3f;
+7'h34: sa = 16'h471c;
+7'h35: sa = 16'h41cd;
+7'h36: sa = 16'h3c56;
+7'h37: sa = 16'h36b9;
+7'h38: sa = 16'h30fb;
+7'h39: sa = 16'h2b1e;
+7'h3a: sa = 16'h2527;
+7'h3b: sa = 16'h1f19;
+7'h3c: sa = 16'h18f8;
+7'h3d: sa = 16'h12c7;
+7'h3e: sa = 16'h0c8b;
+7'h3f: sa = 16'h0647;
+7'h40: sa = 16'h0000;
+7'h41: sa = 16'hf9b9;
+7'h42: sa = 16'hf375;
+7'h43: sa = 16'hed39;
+7'h44: sa = 16'he708;
+7'h45: sa = 16'he0e7;
+7'h46: sa = 16'hdad9;
+7'h47: sa = 16'hd4e2;
+7'h48: sa = 16'hcf05;
+7'h49: sa = 16'hc947;
+7'h4a: sa = 16'hc3aa;
+7'h4b: sa = 16'hbe33;
+7'h4c: sa = 16'hb8e4;
+7'h4d: sa = 16'hb3c1;
+7'h4e: sa = 16'haecd;
+7'h4f: sa = 16'haa0c;
+7'h50: sa = 16'ha57f;
+7'h51: sa = 16'ha12a;
+7'h52: sa = 16'h9d0f;
+7'h53: sa = 16'h9932;
+7'h54: sa = 16'h9594;
+7'h55: sa = 16'h9237;
+7'h56: sa = 16'h8f1f;
+7'h57: sa = 16'h8c4b;
+7'h58: sa = 16'h89c0;
+7'h59: sa = 16'h877d;
+7'h5a: sa = 16'h8584;
+7'h5b: sa = 16'h83d7;
+7'h5c: sa = 16'h8277;
+7'h5d: sa = 16'h8164;
+7'h5e: sa = 16'h809f;
+7'h5f: sa = 16'h8029;
+7'h60: sa = 16'h8001;
+7'h61: sa = 16'h8029;
+7'h62: sa = 16'h809f;
+7'h63: sa = 16'h8164;
+7'h64: sa = 16'h8277;
+7'h65: sa = 16'h83d7;
+7'h66: sa = 16'h8584;
+7'h67: sa = 16'h877d;
+7'h68: sa = 16'h89c0;
+7'h69: sa = 16'h8c4b;
+7'h6a: sa = 16'h8f1f;
+7'h6b: sa = 16'h9237;
+7'h6c: sa = 16'h9594;
+7'h6d: sa = 16'h9932;
+7'h6e: sa = 16'h9d0f;
+7'h6f: sa = 16'ha12a;
+7'h70: sa = 16'ha57f;
+7'h71: sa = 16'haa0c;
+7'h72: sa = 16'haecd;
+7'h73: sa = 16'hb3c1;
+7'h74: sa = 16'hb8e4;
+7'h75: sa = 16'hbe33;
+7'h76: sa = 16'hc3aa;
+7'h77: sa = 16'hc947;
+7'h78: sa = 16'hcf05;
+7'h79: sa = 16'hd4e2;
+7'h7a: sa = 16'hdad9;
+7'h7b: sa = 16'he0e7;
+7'h7c: sa = 16'he708;
+7'h7d: sa = 16'hed39;
+7'h7e: sa = 16'hf375;
+7'h7f: sa = 16'hf9b9;
+    endcase
+
+  wire [29:0] d0;
+  hdmi hdmi_ (.clk(pclk), .dd1(dd1), .d(d0), .audio_w(audio_w), .audio({sa, sa}));
+  // HDMI_encoder_1 e1( .dd1(dd1), .pclk(pclk), .d(d0));
 `ifdef DEBUG_LVDS
     assign {
       TMDS_CLK_N,
