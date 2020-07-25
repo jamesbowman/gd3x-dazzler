@@ -32,6 +32,7 @@ def oneframe(dut):
             ch = [v & 0x3ff, (v >> 10) & 0x3ff, (v >> 20) & 0x3ff]
             (d.datum(ch))
     d.im().save("out.png")
+    d.check_expected()
     print('done')
 
 class TetheredJ1a(swapforth.TetheredTarget):

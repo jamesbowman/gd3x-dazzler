@@ -86,5 +86,29 @@ module j1a(input wire clk,
     (io_addr_[12] ? {8'd0, uart0_data}                                  : 16'd0) |
     (io_addr_[13] ? {12'd0, 1'b0, 1'b0, uart0_valid, 1'b1} : 16'd0);
 
-  hdmi _hdmi (.clk(clk), .dd1(mockeve_i), .d(hdmi));
+  // HDMI interface
+
+  reg running;
+  always @(posedge clk) begin
+    running <= running | mockeve_i[0];  // come to life as soon as VSYNC==1
+  end
+
+  // Generate audio samples at 48000 KHz
+  reg [31:0] d = 0;
+  wire [31:0] dInc = d[31] ? (48000) : (48000 - 74250000);
+  wire [31:0] dN = d + dInc;
+  always @(posedge clk)
+  begin
+    d <= dN;
+  end 
+  wire audio_w = ~d[31] & running;
+
+  reg [15:0] sampleL = 16'h1111, sampleR = 16'h2222;
+  always @(posedge clk)
+    if (audio_w) begin
+      sampleL <= sampleL + 16'h0137;
+      sampleR <= sampleR + 16'h9471;
+    end
+
+  hdmi _hdmi (.clk(clk), .dd1(mockeve_i), .d(hdmi), .audio_w(audio_w), .audio({sampleR, sampleL}));
 endmodule
