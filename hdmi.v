@@ -180,8 +180,9 @@ module hdmi(
   wire [7:0] pec0      = {1'b0, pecc[7:1]} ^ (((pecc[0] ^ bp0)) ? 8'b10000011 : 8'd0);
   wire [7:0] next_pecc = {1'b0, pec0[7:1]} ^ (((pec0[0] ^ bp1)) ? 8'b10000011 : 8'd0);
 
+  wire frame = (x != 11'd32);
   reg dup4 = 0;     // Audio clock packet duplicates the data 4 times
-  terc4 _terc0 (.i({1'b1, bh, VSYNC, HSYNC}), .o(o5[9:0]));
+  terc4 _terc0 (.i({frame, bh, VSYNC, HSYNC}), .o(o5[9:0]));
   terc4 _terc1 (.i({dup4 ? {3{bp0}} : 3'b000, bp0}), .o(o5[19:10]));
   terc4 _terc2 (.i({dup4 ? {3{bp1}} : 3'b000, bp1}), .o(o5[29:20]));
 
@@ -202,24 +203,47 @@ module hdmi(
       d = o0;
 
 
-  wire audio_read = running & (x[4:0] == 5'd31) & (x[10:5] <= 6'd1);
+  wire audio_r = running & (x[4:0] == 5'd31) & (x[10:5] <= 6'd1);
   wire [7:0] csb;
   wire [7:0] csbN = (csb == 8'd191) ? 8'd0 : (csb + 8'd1);
 
-  wire [15:0] lsample, rsample;
-  wire [15:0] lsampleN = lsample + 16'h0137, rsampleN = rsample + 16'h9471;
   
-  localparam int STSZ = 16 + 16 + 8;
-  reg [STSZ - 1:0] audio_state = {16'h2222, 16'h1111, 8'd0};
+  localparam int STSZ = 2 + 16 + 16 + 16 + 16 + 8;
+  reg [STSZ - 1:0] audio_state = {2'd0, 32'd0, 16'h2222, 16'h1111, 8'd0};
   reg [STSZ - 1:0] audio_stateN;
-  assign {rsample, lsample, csb} = audio_state;
+  wire [1:0] fullness;
+  wire [31:0] sample0, sample1;
+  assign {fullness, sample1, sample0, csb} = audio_state;
 
   always @*
-    audio_stateN = {rsampleN, lsampleN, csbN};
+    casez ({fullness, audio_w, audio_r})
 
+//      F     W     R                      F     S1       S0    CSB
+
+    {2'd0, 1'b0, 1'b1}: audio_stateN = {2'd0, 32'bx,   32'bx,   csb};
+    {2'd0, 1'b1, 1'b?}: audio_stateN = {2'd1, 32'bx,   audio,   csb};
+
+    {2'd1, 1'b0, 1'b1}: audio_stateN = {2'd0, 32'bx,   32'bx,   csbN};
+    {2'd1, 1'b1, 1'b0}: audio_stateN = {2'd2, audio,   sample0, csb};
+    {2'd1, 1'b1, 1'b1}: audio_stateN = {2'd1, 32'bx,   audio,   csbN};
+
+    {2'd2, 1'b0, 1'b1}: audio_stateN = {2'd1, 32'bx,   sample1, csbN};
+    {2'd2, 1'b1, 1'b0}: audio_stateN = {2'd2, audio,   sample0, csb};
+    {2'd2, 1'b1, 1'b1}: audio_stateN = {2'd2, audio,   sample1, csbN};
+
+    default:
+          audio_stateN = audio_state;
+    endcase
+
+  reg audio_have;
+  reg [15:0] lsample, rsample;
   always @(posedge clk) begin
-    if (audio_read) //  | audio_w)
-      audio_state <= audio_stateN;
+    audio_state <= audio_stateN;
+    if (audio_r) begin
+      audio_have <= (fullness != 2'd0);
+      $display("%d", audio_have);
+      {rsample, lsample} <= sample0;
+    end
   end
 
   wire [191:0] csbL = 192'h000000000000000000000000000000000000000202100004;
@@ -236,40 +260,39 @@ module hdmi(
 
   always @(posedge clk) begin
     if (running & (x[4:0] == 5'd31)) begin
-      case (x[10:5])
 
-      6'd0, 6'd1:
+      hecc <= 8'h00;
+      pecc <= 8'h00;
+
+      case (x[6:5])
+
+      2'd0, 2'd1:
         begin
-          hecc <= 8'h00;
-          pkt_hdr <= {3'b000, (csb == 0), 4'b0, 16'h0102};
-          pecc <= 8'h00;
+          pkt_hdr <= {
+            (csb == 0) ? 8'b00010000 : 8'd0,
+            8'h01,
+            audio_have ? 8'h02 : 8'h00};
           pkt_bch <= audio_packet;
           dup4 <= 0;
         end
         
-      6'd2:
+      2'd2:
         case (y)
         6'd0:
           begin
-            hecc <= 8'h00;
             pkt_hdr <= 24'h000001;
-            pecc <= 8'h00;
             pkt_bch <= 56'h18_00_0a_22_01_00;
             dup4 <= 1;
           end
         6'd1:
           begin
-            hecc <= 8'h00;
             pkt_hdr <= 24'h0d0282;
-            pecc <= 8'h00;
             pkt_bch <= 56'h00_04_00_08_00_63;
             dup4 <= 0;
           end
         default:
           begin
-            hecc <= 0;
             pkt_hdr <= 0;
-            pecc <= 0;
             pkt_bch <= 0;
             dup4 <= 0;
           end
@@ -277,9 +300,7 @@ module hdmi(
 
       default:
         begin
-          hecc <= 0;
           pkt_hdr <= 0;
-          pecc <= 0;
           pkt_bch <= 0;
           dup4 <= 0;
         end
