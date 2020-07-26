@@ -81,5 +81,16 @@ class TetheredJ1a(swapforth.TetheredTarget):
         s = array.array('B', s).tostring().ljust(16384, b'\xff')
         return array.array('H', s)
 
+    def extra_command(self, c):
+        if c.startswith('binclude'):
+            (_, word, fn) = c.split()
+        
+            self.ser.write(b'\r')
+            while True:
+                c = self.ser.read(1)
+                print('extra output char', repr(c))
+                if c == bytes([30]):
+                    break
+
 if __name__ == '__main__':
     swapforth.main(TetheredJ1a)
