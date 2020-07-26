@@ -1,46 +1,5 @@
 `default_nettype none
 
-module TMDS_encoderA(
-	input wire clk,
-	input wire [7:0] VD,  // video data (red, green or blue)
-	input wire [1:0] CD,  // control data
-	input wire VDE,  // video data enable, to choose between CD (when VDE=0) and VD (when VDE=1)
-	output reg [9:0] TMDS = 0
-);
-
-wire [3:0] Nb1s = VD[0] + VD[1] + VD[2] + VD[3] + VD[4] + VD[5] + VD[6] + VD[7];
-wire XNOR = (Nb1s>4'd4) || (Nb1s==4'd4 && VD[0]==1'b0);
-wire [8:0] q_m = {~XNOR, q_m[6:0] ^ VD[7:1] ^ {7{XNOR}}, VD[0]};
-
-reg [3:0] balance_acc = 0;
-wire [3:0] balance = q_m[0] + q_m[1] + q_m[2] + q_m[3] + q_m[4] + q_m[5] + q_m[6] + q_m[7] - 4'd4;
-wire balance_sign_eq = (balance[3] == balance_acc[3]);
-wire invert_q_m = (balance==0 || balance_acc==0) ? ~q_m[8] : balance_sign_eq;
-wire [3:0] balance_acc_inc = balance - ({q_m[8] ^ ~balance_sign_eq} & ~(balance==0 || balance_acc==0));
-wire [3:0] balance_acc_new = invert_q_m ? balance_acc-balance_acc_inc : balance_acc+balance_acc_inc;
-wire [9:0] TMDS_data = {invert_q_m, q_m[8], q_m[7:0] ^ {8{invert_q_m}}};
-wire [9:0] TMDS_code = CD[1] ? (CD[0] ? 10'b1010101011 : 10'b0101010100) : (CD[0] ? 10'b0010101011 : 10'b1101010100);
-
-always @(posedge clk) TMDS <= VDE ? TMDS_data : TMDS_code;
-always @(posedge clk) balance_acc <= VDE ? balance_acc_new : 4'h0;
-endmodule
-
-module HDMI_encoder_1(
-  input  wire [26:0] dd1,
-  input  wire pclk,
-  output wire [29:0] d);
-  wire [7:0] pR;
-  wire [7:0] pG;
-  wire [7:0] pB;
-  wire DE, HSYNC, VSYNC;
-  assign {pR, pG, pB, DE, HSYNC, VSYNC} = dd1;
-  wire [9:0] TMDS_red, TMDS_green, TMDS_blue;
-  TMDS_encoderA encode_R(.clk(pclk), .VD(pR), .CD(2'b00)          ,.VDE(DE), .TMDS(TMDS_red));
-  TMDS_encoderA encode_G(.clk(pclk), .VD(pG), .CD(2'b00)          ,.VDE(DE), .TMDS(TMDS_green));
-  TMDS_encoderA encode_B(.clk(pclk), .VD(pB), .CD({VSYNC,HSYNC})  ,.VDE(DE), .TMDS(TMDS_blue));
-  assign d = {TMDS_red, TMDS_green, TMDS_blue};
-endmodule
-
 module HDMI_encoder_2(
   input  wire pclk,
   input  wire [29:0] d,
@@ -247,6 +206,7 @@ endmodule
 
 module integrator(
   input wire clk,
+  input wire tick,
   input wire AUDIO,
   output reg [15:0] sample);
 
@@ -254,14 +214,12 @@ module integrator(
 
   reg [10:0] cnt;
   reg [15:0] acc;
-  wire last = (cnt == 11'd1499);
   wire [15:0] waudio = AUDIO ? weight : -weight;
 
   always @(negedge clk) begin
-    if (last)
+    if (tick)
       sample <= acc;
-    cnt <= last ? 11'd0 : (cnt + 11'd1);
-    acc <= waudio + (last ? 16'd0 : acc);
+    acc <= waudio + (tick ? 16'd0 : acc);
   end
 
 endmodule
@@ -519,6 +477,7 @@ module top(
   wire [15:0] sample;
   integrator _integrator(
     .clk(eveclk),
+    .tick(audio_w),
     .AUDIO(AUDIO),
     .sample(sample));
 
@@ -977,8 +936,7 @@ module top(
     endcase
 
   wire [29:0] d0;
-  hdmi hdmi_ (.clk(pclk), .dd1(dd1), .d(d0), .audio_w(audio_w), .audio({sa, sa}));
-  // HDMI_encoder_1 e1( .dd1(dd1), .pclk(pclk), .d(d0));
+  hdmi hdmi_ (.clk(pclk), .dd1(dd1), .d(d0), .audio_w(audio_w), .audio({sample, sample}));
 `ifdef DEBUG_LVDS
     assign {
       TMDS_CLK_N,
@@ -993,7 +951,6 @@ module top(
   HDMI_encoder_2 e2(
     .pclk(pclk),
     .d(d0),
-    // .d(d1),
     .pclkx2(pclkx2),
     .pclkx10(pclkx10),
     .serdesstrobe(serdesstrobe),

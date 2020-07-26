@@ -299,6 +299,12 @@ module hdmi(
             pkt_bch <= 56'h00_04_00_08_00_63;
             dup4 <= 0;
           end
+        6'd2:
+          begin
+            pkt_hdr <= 24'h0a0184;
+            pkt_bch <= 56'h00_00_00_00_01_70;
+            dup4 <= 0;
+          end
         default:
           begin
             pkt_hdr <= 0;
