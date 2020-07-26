@@ -359,13 +359,6 @@ create cmd.flash
         1237499. d= 0=
     until ;
 
-: play REG_SOUND eve! >spiw REG_PLAY eve! $1 >spi ;
-: x
-    REG_SOUND eve! $44 >spi
-    REG_PLAY eve! $1 >spi
-    500 0 do $18 io@ . loop
-    ;
-
 \ ------------------------------------------------------------
 
 #include wii.fs
@@ -405,7 +398,7 @@ create cmd.flash
         $d8 wcmd 0 i addr notbusy
     loop
 
-    CSPI 0. evea spi> drop
+    CSPI 0. evea /in/ spi> drop
     DSPI
 
     $100 um/mod nip 1+
@@ -443,3 +436,6 @@ create cmd.flash
 \     /eve-spi
 \     showid
 \ ;
+
+: play REG_SOUND eve! >spiw REG_PLAY eve! $1 >spi ;
+
