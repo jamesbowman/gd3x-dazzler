@@ -4,11 +4,11 @@ module baudgen(
   input wire clk,
   input wire resetq,
   input wire [31:0] baud,
+  input wire [31:0] clkfreq,
   input wire restart,
   output wire ser_clk);
-  parameter CLKFREQ = 1000000;
 
-  wire [38:0] aclkfreq = CLKFREQ;
+  wire [38:0] aclkfreq = clkfreq;
   reg [38:0] d;
   wire [38:0] dInc = d[38] ? ({4'd0, baud}) : (({4'd0, baud}) - aclkfreq);
   wire [38:0] dN = restart ? 0 : (d + dInc);
@@ -44,10 +44,10 @@ module uart(
    output reg uart_tx,     // UART transmit wire
    // Inputs
    input wire [31:0] baud,
+   input wire [31:0] clkfreq,
    input wire uart_wr_i,   // Raise to transmit byte
    input wire [7:0] uart_dat_i  // 8-bit data
 );
-  parameter CLKFREQ = 1000000;
 
   reg [3:0] bitcount;
   reg [8:0] shifter;
@@ -58,10 +58,11 @@ module uart(
   wire ser_clk;
 
   wire starting = uart_wr_i & ~uart_busy;
-  baudgen #(.CLKFREQ(CLKFREQ)) _baudgen(
+  baudgen _baudgen(
     .clk(clk),
     .resetq(resetq),
     .baud(baud),
+    .clkfreq(clkfreq),
     .restart(1'b0),
     .ser_clk(ser_clk));
 
@@ -90,11 +91,11 @@ module rxuart(
    input wire clk,
    input wire resetq,
    input wire [31:0] baud,
+   input wire [31:0] clkfreq,
    input wire uart_rx,      // UART recv wire
    input wire rd,           // read strobe
    output wire valid,       // has data 
    output wire [7:0] data); // data
-  parameter CLKFREQ = 1000000;
 
   reg [4:0] bitcount;
   reg [7:0] shifter;
@@ -109,9 +110,10 @@ module rxuart(
   wire [7:0] shifterN = sample ? {hh[1], shifter[7:1]} : shifter;
 
   wire ser_clk;
-  baudgen #(.CLKFREQ(CLKFREQ)) _baudgen(
+  baudgen _baudgen(
     .clk(clk),
     .baud({baud[30:0], 1'b0}),
+    .clkfreq(clkfreq),
     .resetq(resetq),
     .restart(startbit),
     .ser_clk(ser_clk));
@@ -150,6 +152,7 @@ module buart(
    input wire clk,
    input wire resetq,
    input wire [31:0] baud,
+   input wire [31:0] clkfreq,
    input wire rx,           // recv wire
    output wire tx,          // xmit wire
    input wire rd,           // read strobe
@@ -159,20 +162,20 @@ module buart(
    input wire [7:0] tx_data,
    output wire [7:0] rx_data // data
 );
-  parameter CLKFREQ = 1000000;
-
-  rxuart #(.CLKFREQ(CLKFREQ)) _rx (
+  rxuart _rx (
      .clk(clk),
      .resetq(resetq),
      .baud(baud),
+     .clkfreq(clkfreq),
      .uart_rx(rx),
      .rd(rd),
      .valid(valid),
      .data(rx_data));
-  uart #(.CLKFREQ(CLKFREQ)) _tx (
+  uart _tx (
      .clk(clk),
      .resetq(resetq),
      .baud(baud),
+     .clkfreq(clkfreq),
      .uart_busy(busy),
      .uart_tx(tx),
      .uart_wr_i(wr),
