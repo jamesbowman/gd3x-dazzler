@@ -15,13 +15,17 @@ import swapforth
 
 def oneframe(dut):
     import tv
+    from PIL import Image
+    felix = Image.open("felix.png").convert("RGB").load()
     def mock():
         for y in range(750):
             vsync = y < 5
             for x in range(1650):
                 hsync = x < 40
                 de = (260 <= x < (260 + 1280)) and (25 <= y < (25 + 720))
-                yield (0x112233, de, hsync, vsync)
+
+                (r,g,b) = felix[((x - 260) % 320), ((y - 25) % 200)]
+                yield ((b << 16) | (g << 8) + r, de, hsync, vsync)
     d = tv.Decoder()
     with open("log", "wt") as f:
         for sigs in mock():
