@@ -76,11 +76,11 @@ defer restart
 \     1 i2c-rx .x
 \     i2c-stop ;
 \ 
-\ : scan
-\     120 8 do
-\         i 2* i2c-start i2c-stop
-\         cr i .x .
-\     loop ;
+: scan
+    120 8 do
+        i 2* i2c-start i2c-stop
+        cr i .x .
+    loop ;
 
 : present ( - f  true if present )
     det dup
@@ -128,3 +128,15 @@ defer restart
         2 io@ .x
         3 io@ .x
     again ;
+
+: frob
+    0
+    begin
+        cr .s
+        dup $5 and
+        dup false pl ! i2c!
+        true pl ! i2c!
+        2000 ms
+        invert
+    again
+    ;

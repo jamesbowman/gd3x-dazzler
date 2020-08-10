@@ -1,6 +1,8 @@
 new
 decimal
 
+#include dna.fs
+
 : umin 2dup u< if drop else nip then ;
 
 : ion   1 swap io! ;
@@ -48,9 +50,12 @@ CSPI /spi/
     $1 rspi io!
     begin $3 rspi io@ until
     ;
-: spi>
-    $ff >spi
+: spix
+    >spi
     $1 rspi io@
+    ;
+: spi>
+    $ff spix
     ;
 : >spiw
     $2 rspi io!
@@ -252,10 +257,20 @@ create cmd.flash
     /eve-qpi
 
     REG_ID eve@ $7c =
-
     /eve-spi
 
     4 passed ;
+
+: io@. ( a -- d. )
+    dup io@ swap 1+ io@ ;
+
+: check-bus
+    $200 ion 1 ms $200 ioff
+    30 ms
+    $200 io@. cr .x .x cr
+    $200 io@. $7ffffff. d=
+    $202 io@. $0000000. d= and
+    5 passed ;
 
 : eve-diag
     eve-start
@@ -265,6 +280,16 @@ create cmd.flash
     check-u4q
     check-audio
     check-eveq
+    check-bus
+    ;
+
+\ ------------------------------------------------------------
+    ;
+
+\ ------------------------------------------------------------
+    ;
+
+\ ------------------------------------------------------------
     ;
 
 \ ------------------------------------------------------------
@@ -365,9 +390,6 @@ create cmd.flash
 
 \ ------------------------------------------------------------
 
-: cold ." cold " 200 ms key? if quit else poweron wii-main then ;
-' cold init !
-
 
 #include icap.fs
 
@@ -388,7 +410,7 @@ create cmd.flash
     finish
     REG_CMD_WRITE eve@ 4 -
     $fff and s>d $308000. d+
-    hex eve@. .x .x ;
+    eve@. ;
 
 : e2fl ( d. )
     manufacturer
@@ -398,15 +420,15 @@ create cmd.flash
         $d8 wcmd 0 i addr notbusy
     loop
 
-    CSPI 0. evea /in/ spi> drop
+    CSPI $1000. evea /in/ spi> drop
     DSPI
 
     $100 um/mod nip 1+
     0 do
         i 100 mod 0= if cr i . then
         $02 wcmd i $100 um* addr
-        $100 0 do
-            CSPI spi> DSPI >spi
+        $40 0 do
+            CSPI spid> DSPI >spid
         loop
         notbusy
     loop
@@ -438,4 +460,81 @@ create cmd.flash
 \ ;
 
 : play REG_SOUND eve! >spiw REG_PLAY eve! $1 >spi ;
+
+: #spi  $3f and 1+ ;
+
+: (spidriver)
+    dup $80 and if
+        dup $40 and if
+            #spi 0 do
+                key >spi
+            loop
+            exit
+        then
+        #spi pad swap bounds
+        2dup do
+            key i c!
+        loop
+        do
+            i c@ spix emit
+        loop
+        exit
+    then
+    case
+        'e' of  key emit endof
+        'u' of  idle    endof
+        's' of  sel      endof
+        'a' of  key drop endof
+        'b' of  key drop endof
+    endcase
+    ;
+
+: spidriver
+    0 MUX0 cspi idle
+    '@' emit
+    begin
+        key
+        (spidriver)
+    again
+    ;
+
+: (loadbin)
+    \ Now: $ffff8: length, $ffffc: CRC
+    cspi
+    $ffffc. eve@. result d=
+    dup if
+        $ffff8. eve@. e2fl
+    then
+    6 passed
+    ;
+
+: loadbin
+    0 MUX0 CSPI
+    begin
+        begin cmdspace 255 > until stream
+        $b8 emit
+        key
+    while
+        256 0 do
+            key >spi
+        loop
+    repeat 
+    finish
+
+    (loadbin)
+    ;
+
+: cold
+    ." cold " dna type space
+    200 ms key? if
+        quit
+    else
+        \ poweron wii-main
+
+        eve-diag
+        loadbin
+        begin again
+    then ;
+' cold init !
+
 
