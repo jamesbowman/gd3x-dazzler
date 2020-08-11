@@ -85,12 +85,54 @@ class TetheredJ1a(swapforth.TetheredTarget):
         if c.startswith('binclude'):
             (_, word, fn) = c.split()
         
-            self.ser.write(b'\r')
-            while True:
-                c = self.ser.read(1)
-                print('extra output char', repr(c))
-                if c == bytes([30]):
-                    break
+            self.ser.write(word.encode('ascii') + b'\r')
+            with open(fn, "rb") as f:
+                while True:
+                    blk = f.read(256)
+                    have = int(len(blk) != 0)
+                    while self.ser.read(1) != b'\xb8':
+                        pass
+                    self.ser.write(bytes([have]))
+                    if not have:
+                        break
+                    self.ser.write(blk)
+            while self.ser.read(1) != b'\x1e':
+                pass
+        elif c.startswith('spidriver'):
+            import spidriver
+            class DazzlerDriver(spidriver.SPIDriver):
+                def __init__(self, ser):
+                    self.ser = ser
+
+                    ser.write(b'spidriver\r')
+                    while ser.read(1) != b'@':
+                        pass
+
+                    for c in [0x55, 0x00, 0xff, 0xaa]:
+                        r = self.__echo(c)
+                        if r != c:
+                            print('Echo test failed - not attached?')
+                            print('Expected %r but received %r' % (c, r))
+                            raise IOError
+                def __ser_w(self, s):
+                    if isinstance(s, list):
+                        s = bytes(s)
+                    self.ser.write(s)
+
+                def __echo(self, c):
+                    self.__ser_w([ord('e'), c])
+                    r = self.ser.read(1)
+                    return r[0]
+
+                def getstatus(self):
+                    pass
+            sd = DazzlerDriver(self.ser)
+            for i in range(3):
+                sd.sel()
+                print(repr(sd.writeread(bytes([0x30, 0x20, 0x00, 0x00, 0x00]))))
+                sd.unsel()
+        else:
+            print('Unknown command: ' + c)
 
 if __name__ == '__main__':
     swapforth.main(TetheredJ1a)

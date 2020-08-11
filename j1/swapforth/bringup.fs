@@ -2,6 +2,8 @@ new
 decimal
 
 #include dna.fs
+#include icap.fs
+#include wii.fs
 
 : umin 2dup u< if drop else nip then ;
 
@@ -104,6 +106,11 @@ $2188 reg REG_SPI_WIDTH
 : eve!
     $80 or evea ;
 
+: >>eve ( a u )
+    bounds do
+        i c@ >spi
+    loop ;
+
 : cmdspace  REG_CMDB_SPACE eve@ ;
 : finish    begin cmdspace $ffc = until ;
 : stream    REG_CMDB_WRITE eve! ;
@@ -123,6 +130,7 @@ $2188 reg REG_SPI_WIDTH
     $00     host
 
     200 ms
+    $b0000. eve! dna >>eve 0 >spi
     ;
 
 : eve?
@@ -182,10 +190,7 @@ create cmd.flash
 
 : commands
     stream
-    count 4 * bounds
-    do
-        i c@ >spi
-    loop
+    count 4 * >>eve
     finish ;
 
 \ Passfail indicators are bytes 0..n in RGB332 format
@@ -272,6 +277,16 @@ create cmd.flash
     $202 io@. $0000000. d= and
     5 passed ;
 
+: i2c-ok ( port - f )
+    pl !
+    0 i2c! -1 i2c! 1 ms
+    i2c@ 5 and 5 = ;
+
+: check-i2c
+    false i2c-ok
+    true i2c-ok
+    and 6 passed ;
+
 : eve-diag
     eve-start
     cmd.bringup commands
@@ -281,6 +296,7 @@ create cmd.flash
     check-audio
     check-eveq
     check-bus
+    check-i2c
     ;
 
 \ ------------------------------------------------------------
@@ -386,12 +402,6 @@ create cmd.flash
 
 \ ------------------------------------------------------------
 
-#include wii.fs
-
-\ ------------------------------------------------------------
-
-
-#include icap.fs
 
 : fl.dump (  )
     0. read
@@ -505,7 +515,7 @@ create cmd.flash
     dup if
         $ffff8. eve@. e2fl
     then
-    6 passed
+    8 passed
     ;
 
 : loadbin

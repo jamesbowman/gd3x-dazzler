@@ -497,14 +497,12 @@ module top(
     P15,
     P16,
     P14,
-    P13,
-
-    P12,
-    P11,
-    P10,
-    P9,
-
-    P8,
+    P13,  // P1 SDA
+    P12,  // P1 DET
+    P11,  // P1 SCL
+    P10,  // P2 SDA
+    P9,   // P2 DET
+    P8,   // P2 SCL
     P7,
     P6,
     P5,
@@ -624,6 +622,17 @@ module top(
     .O(ICAP_o),
     .BUSY(ICAP_busy));
 
+  reg dna_read;
+  reg dna_shift;
+  reg dna_clk;
+  wire dna_dout;
+  DNA_PORT dna(
+    .DOUT(dna_dout),
+    .DIN(0),
+    .READ(dna_read),
+    .SHIFT(dna_shift),
+    .CLK(dna_clk));
+
   wire [5:0] i2c_i = {P8, P9, P10, P11, P12, P13};
   reg [5:0] i2c_o = 6'b111111;
   assign P8   = i2c_o[5] ? 1'bz : 1'b0;
@@ -667,6 +676,9 @@ module top(
   wire DSPI_MISO;
   reg [5:0] CSPI0, DSPI0;
 
+  reg dd_oa_reset;
+  reg [31:0] dd_o, dd_a;
+
   // 5    4    3    2    1    0
   // CS   SCK  IO3  IO2  MISO MOSI
 
@@ -692,6 +704,13 @@ module top(
     ((io_a[11:0] == 12'h111) ? dspie_rx : 16'd0) | 
     ((io_a[11:0] == 12'h112) ? dspie_rx : 16'd0) | 
     ((io_a[11:0] == 12'h113) ? {15'd0, dspie_idle} : 16'd0) | 
+
+    ((io_a[11:0] == 12'h200) ? dd_o[15:0] : 16'd0) |                              // video bus debug
+    ((io_a[11:0] == 12'h201) ? dd_o[31:16] : 16'd0) |                             // video bus debug
+    ((io_a[11:0] == 12'h202) ? dd_a[15:0] : 16'd0) |                              // video bus debug
+    ((io_a[11:0] == 12'h203) ? dd_a[31:16] : 16'd0) |                             // video bus debug
+
+    ((io_a[11:0] == 12'h204) ? {15'd0, dna_dout} : 16'd0) |                       // DNA_PORT serial out
 
     (io_a[12] ? {8'd0, uart0_data} : 16'd0) | 
     (io_a[13] ? {11'd0, 1'b0, 1'b0, 1'b0, uart0_valid, !uart0_busy} : 16'd0);
@@ -752,6 +771,12 @@ module top(
       DSPI_dir <= io_wd[0];
     if (io_w & (io_a[11:0] == 12'h115))
       DSPI_quad <= io_wd[0];
+
+    if (io_w & (io_a[11:0] == 12'h200))
+      dd_oa_reset <= io_wd[0];
+
+    if (io_w & (io_a[11:0] == 12'h204))
+      {dna_read, dna_shift, dna_clk} <= io_wd[2:0];
 
   end
 
@@ -934,6 +959,16 @@ module top(
 7'h7e: sa = 16'hf375;
 7'h7f: sa = 16'hf9b9;
     endcase
+
+  always @(posedge pclk) begin
+    if (dd_oa_reset) begin
+      dd_o <= 32'd00000000;
+      dd_a <= 32'hffffffff;
+    end else begin
+      dd_o <= dd_o | dd1;
+      dd_a <= dd_a & dd1;
+    end
+  end
 
   wire [29:0] d0;
   hdmi hdmi_ (.clk(pclk), .dd1(dd1), .d(d0), .audio_w(audio_w), .audio({sample, sample}));
