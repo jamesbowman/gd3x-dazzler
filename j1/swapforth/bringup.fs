@@ -16,6 +16,7 @@ decimal
 : rspi  $777 + ;
 : CSPI  $8100 ['] rspi ! ;
 : DSPI  $8110 ['] rspi ! ;
+: ESPI  $8120 ['] rspi ! ;
 
 : rspi! ( u r )                 rspi io! ;
 : /spi/     $0 $5 rspi! ;
@@ -547,4 +548,56 @@ create cmd.flash
     then ;
 ' cold init !
 
+: cmd ( c )
+    sel $40 or >spi ;
+: addr >< >spiw >< >spiw ;
+: crc >spi ;
 
+: response ( - u )
+    begin
+        spi>
+        dup $80 and
+    while
+        drop
+    repeat
+    ;
+
+: blanks ( n )
+    0 do $ff >spi loop ;
+
+: R1 ( - u )
+    response idle 1 blanks ;
+
+: sdR7 ( - u )
+    response 4 blanks idle ;
+
+: appcmd ( cc lba. )
+    $55 cmd 0. addr $95 crc
+    R1 drop
+    2>r cmd 2r> addr $95 crc ;
+
+: x
+    ESPI /spi/
+    idle
+    idle 10 blanks
+
+    begin
+        20 ms
+        0 cmd 0. addr $95 crc
+        response
+        idle 1 blanks
+        dup cr .x
+        1 =
+    until
+
+    8 cmd $1aa. addr $87 crc
+    sdR7 1 = 1 and ( sdhc )
+    dup cr ." sdhc: " .
+    cr
+    begin
+        41 0 over 14 lshift appcmd
+        R1
+        dup .
+        1 and 0=
+    until
+    ;
