@@ -548,10 +548,17 @@ create cmd.flash
     then ;
 ' cold init !
 
+: sd.ff     $ff >spi ;
+: sd.s      sd.ff sel  sd.ff ;
+: sd.u      sd.ff idle sd.ff ;
+
 : cmd ( c )
-    sel $40 or >spi ;
+    sd.s $40 or >spi ;
 : addr >< >spiw >< >spiw ;
-: crc >spi ;
+: crc $95 >spi ;
+
+: ccmd ( c )
+    cmd 0. addr crc ;
 
 : response ( - u )
     begin
@@ -563,41 +570,219 @@ create cmd.flash
     ;
 
 : blanks ( n )
-    0 do $ff >spi loop ;
+    0 do sd.ff loop ;
 
 : R1 ( - u )
-    response idle 1 blanks ;
+    response sd.u ;
 
-: sdR7 ( - u )
-    response 4 blanks idle ;
+: sdR3_7 ( - a. )
+    response drop
+    spiw> >< spiw> >< swap sd.u
+    ;
 
 : appcmd ( cc lba. )
-    $55 cmd 0. addr $95 crc
+    55 ccmd
     R1 drop
-    2>r cmd 2r> addr $95 crc ;
+    2>r cmd 2r> addr crc ;
 
-: x
+variable ccs
+
+:  cmd17 ( a. )  \ sector offset
+    ccs @ 0= if
+        9 0 do d2* loop
+    then
+    17 cmd addr crc
+    R1 drop
+    sel
+    begin spi> $fe = until
+    ;
+
+: bit30 ( d. - u )
+    nip $4000 and 0<> ;
+
+: ?sec
+    512 0 do
+        i 31 and 0= if cr then
+        spi> .x2
+    loop sd.u ;
+
+: /sd
     ESPI /spi/
-    idle
-    idle 10 blanks
+    sd.u 10 0 do sd.ff loop
 
     begin
         20 ms
-        0 cmd 0. addr $95 crc
-        response
-        idle 1 blanks
+        0 ccmd R1
         dup cr .x
         1 =
     until
 
-    8 cmd $1aa. addr $87 crc
-    sdR7 1 = 1 and ( sdhc )
+    8 cmd $1aa. addr $87 >spi
+    sdR3_7 cr ." 8 says:" .x .x
     dup cr ." sdhc: " .
-    cr
+    1 ms
     begin
-        41 0 over 14 lshift appcmd
+        41 0 1 14 lshift appcmd
         R1
-        dup .
+        cr ." cmd41: " dup . .s
         1 and 0=
+        10 ms
     until
+
+    cr 58 ccmd sdR3_7 bit30
+    cr ." ccs: " dup .
+    ccs !
+    exit
+
+    2 0 do
+        cr
+        i s>d cmd17
+        512 0 do
+            i 31 and 0= if cr then
+            spi> .x2
+        loop sd.u
+    loop
+    ;
+
+create scratch 48 allot
+2variable sector
+2variable clus
+variable cnt
+: scr ( u )     scratch + postpone literal ;
+
+: 2@l           2@ swap ;
+: rs ( d. )     sector 2! 0 cnt ! ;
+: sd> ( -- u )
+    cnt @ 511 and 0= if
+        sd.u
+        cr ." [fetch] " sector 2@ d.
+        sector 2@ 2dup cmd17
+        1. d+ sector 2!
+    then
+    1 cnt +! spi> ;
+: skip ( n )    0 ?do sd> drop loop ;
+: get ( n )     scratch swap bounds ?do sd> i c! loop ;
+: fin           512 cnt @ 511 and - skip sd.u ;
+
+2variable fat_begin_lba             \ LBA_Begin + RsvdSecCnt
+2variable cluster_begin_lba         \ LBA_Begin + RsvdSecCnt + (NumFATs * FATSz32);
+variable sectors_per_cluster        \ SecPerClus
+2variable root_dir_first_cluster    \ RootClus
+
+: s>c ( s. -- c. )
+    cluster_begin_lba 2@ d-
+    sectors_per_cluster @ um/mod nip
+    2. d+ ;
+
+: c>s ( c. -- s. )
+    -2. d+
+    sectors_per_cluster @ 1 m*/
+    cluster_begin_lba 2@ d+ ;
+
+: sector+ ( s. -- s.' ) \ next sector
+    1. d+
+    over sectors_per_cluster c@ 1- and if exit then
+    \ cluster wrap
+    -1. d+
+    s>c
+    ;
+
+: partition ( lba_begin. )
+    2dup rs
+    48 get
+    fin
+
+    [ $0e scr ] @ 0 d+ 2dup fat_begin_lba 2!
+    [ $24 scr ] 2@l d2* d+  cluster_begin_lba 2!
+    [ $0d scr ] c@ sectors_per_cluster !
+    [ $2c scr ] 2@l root_dir_first_cluster 2!
+;
+
+: /fat32
+    0. rs
+    446 skip
+    4 0 do
+        16 get
+        [ 4 scr ] c@ $B $D within if
+            fin [ 8 scr ] 2@l partition
+            unloop exit
+        then
+    loop
+;
+
+: cluster ( c. ) \ start reading cluster
+    -2. d+
+    sectors_per_cluster @ 1 m*/
+    cluster_begin_lba 2@ d+
+    rs
+;
+
+: cseg ( a u u - a' )
+    do i scratch + c@ over c! 1+ 2 +loop ;
+
+: pad0 ( - a u )    \ The NUL-terminated string at PAD
+    pad dup
+    begin
+        dup c@
+    while
+        1+
+    repeat
+    over - ;
+
+: root ( xt )
+    root_dir_first_cluster 2@ cluster
+    begin
+        32 get
+        [ $00 scr ] c@
+    while
+        [ $00 scr ] c@ $e5 <> if
+            [ $0b scr ] c@ $0f = if
+                [ 0 scr ] c@ $3f and 1- 13 * pad +
+                11 1 cseg
+                26 14 cseg
+                32 28 cseg drop
+            then
+            [ $0b scr ] c@ $18 and 0= if
+                dup >r execute r>
+            then
+        then
+    repeat
+    fin
+    drop ;
+
+: f.size    [ $1c scr ] 2@l ;
+: f.clus    [ $1a scr ] @ [ $14 scr ] @ ;
+: (ls)      cr f.clus 10 d.r f.size 10 d.r space pad0 type ;
+: ls        ['] (ls) root ;
+
+2variable size
+
+: (open) ( a u -- a u | c. 0 0 )
+    2dup pad0 compare 0= if
+        f.size size 2!
+        2drop
+        f.clus
+        0.
+    then ;
+                
+: open ( a u - ior )
+    ['] (open) root nip     ( u | cl. 0 )
+    ?dup 0= if
+        cluster 0
+    then
+    ;
+
+: cat ( a u )
+    open 0= if
+        size 2@ drop 0 do
+            sd> emit
+        loop
+    then
+    fin
+    ;
+
+: x
+    0 mux0 /sd
+    cr
+    /fat32
     ;
