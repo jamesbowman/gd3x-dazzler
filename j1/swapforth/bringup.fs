@@ -652,40 +652,44 @@ variable cnt
 
 : 2@l           2@ swap ;
 : rs ( d. )     sector 2! 0 cnt ! ;
+defer sector+ ( s. -- s.' ) \ next sector
+: sd>s \ aligned sector read
+    sd.u sector 2@ 
+    \ cr ." [fetch] " 2dup d.
+    2dup sector+ sector 2!
+    cmd17 ;
 : sd> ( -- u )
     cnt @ 511 and 0= if
-        sd.u
-        cr ." [fetch] " sector 2@ d.
-        sector 2@ 2dup cmd17
-        1. d+ sector 2!
+        sd>s
     then
     1 cnt +! spi> ;
 : skip ( n )    0 ?do sd> drop loop ;
 : get ( n )     scratch swap bounds ?do sd> i c! loop ;
 : fin           512 cnt @ 511 and - skip sd.u ;
 
+
 2variable fat_begin_lba             \ LBA_Begin + RsvdSecCnt
 2variable cluster_begin_lba         \ LBA_Begin + RsvdSecCnt + (NumFATs * FATSz32);
 variable sectors_per_cluster        \ SecPerClus
 2variable root_dir_first_cluster    \ RootClus
-
-: s>c ( s. -- c. )
-    cluster_begin_lba 2@ d-
-    sectors_per_cluster @ um/mod nip
-    2. d+ ;
 
 : c>s ( c. -- s. )
     -2. d+
     sectors_per_cluster @ 1 m*/
     cluster_begin_lba 2@ d+ ;
 
-: sector+ ( s. -- s.' ) \ next sector
+:noname ( s. -- s.' ) \ next sector
     1. d+
     over sectors_per_cluster c@ 1- and if exit then
     \ cluster wrap
-    -1. d+
-    s>c
+    2drop
+    clus 2@ 128 um/mod
+    0 fat_begin_lba 2@ d+
+    rs 4 * skip 4 get fin
+    [ 0 scr ] 2@l 2dup clus 2!
+    c>s
     ;
+is sector+
 
 : partition ( lba_begin. )
     2dup rs
@@ -711,9 +715,8 @@ variable sectors_per_cluster        \ SecPerClus
 ;
 
 : cluster ( c. ) \ start reading cluster
-    -2. d+
-    sectors_per_cluster @ 1 m*/
-    cluster_begin_lba 2@ d+
+    2dup clus 2!
+    c>s
     rs
 ;
 
@@ -780,6 +783,35 @@ variable sectors_per_cluster        \ SecPerClus
     then
     fin
     ;
+
+: hd ( a u )
+    open 0= if
+        size 2@ drop 0 do
+            i 15 and 0= if
+                cr i .x space
+            then
+            sd> .x2
+        loop
+    then
+    fin
+    ;
+
+: bench ( a u )
+    open 0= if
+        size 2@ 512 um/mod
+        0 ?do
+            \ cr 512 . i .
+            sd>s
+            512 0 do
+                spi> drop
+            loop
+        loop
+        0 ?do
+            \ cr i .
+            sd> .x2
+        loop
+        fin
+    then ;
 
 : x
     0 mux0 /sd
