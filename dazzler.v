@@ -673,8 +673,24 @@ module top(
     .mask(DSPI_mask),
     .idle(dspie_idle));
 
-  wire DSPI_MISO;
-  reg [5:0] CSPI0, DSPI0;
+  wire [15:0] espie_rx;
+  wire espie_idle;
+  wire [5:0] ESPIe;
+  SPIengine Eeng (
+    .clk(cpuclk),
+    .start8(io_w & (io_a[11:0] == 12'h121)),
+    .start16(io_w & (io_a[11:0] == 12'h122)),
+    .tx(io_wd),
+    .rx(espie_rx),
+    .i(ESPI_i),
+    .o(ESPIe),
+    .d(ESPI_dir),
+    .q(ESPI_quad),
+    .mask(ESPI_mask),
+    .idle(espie_idle));
+
+  wire DSPI_MISO, ESPI_MISO;
+  reg [5:0] CSPI0, DSPI0, ESPI0;
 
   reg dd_oa_reset;
   reg [31:0] dd_o, dd_a;
@@ -705,6 +721,11 @@ module top(
     ((io_a[11:0] == 12'h112) ? dspie_rx : 16'd0) | 
     ((io_a[11:0] == 12'h113) ? {15'd0, dspie_idle} : 16'd0) | 
 
+    ((io_a[11:0] == 12'h120) ? {14'd0, ESPI_MISO, P19} : 16'd0) |                 // ESPI
+    ((io_a[11:0] == 12'h121) ? espie_rx : 16'd0) | 
+    ((io_a[11:0] == 12'h122) ? espie_rx : 16'd0) | 
+    ((io_a[11:0] == 12'h123) ? {15'd0, espie_idle} : 16'd0) | 
+
     ((io_a[11:0] == 12'h200) ? dd_o[15:0] : 16'd0) |                              // video bus debug
     ((io_a[11:0] == 12'h201) ? dd_o[31:16] : 16'd0) |                             // video bus debug
     ((io_a[11:0] == 12'h202) ? dd_a[15:0] : 16'd0) |                              // video bus debug
@@ -715,7 +736,7 @@ module top(
     (io_a[12] ? {8'd0, uart0_data} : 16'd0) | 
     (io_a[13] ? {11'd0, 1'b0, 1'b0, 1'b0, uart0_valid, !uart0_busy} : 16'd0);
 
-  reg[1:0] MUX0;
+  reg[2:0] MUX0;
 
   reg [47:0] WII1 = 48'h123456789abc;
   reg [47:0] WII2 = 48'h123456789abc;
@@ -745,7 +766,7 @@ module top(
       WII2[47:32] <= io_wd;
 
     if (io_w & (io_a[11:0] == 12'h011))
-      MUX0 <= io_wd[1:0];
+      MUX0 <= io_wd[2:0];
     if (io_w & (io_a[11:0] == 12'h012))
       ICAP_ctl <= io_wd[2:0];
     if (io_w & (io_a[11:0] == 12'h013))
@@ -771,6 +792,13 @@ module top(
       DSPI_dir <= io_wd[0];
     if (io_w & (io_a[11:0] == 12'h115))
       DSPI_quad <= io_wd[0];
+
+    if (io_w & (io_a[11:0] == 12'h120))
+      ESPI0 <= io_wd[5:0];
+    if (io_w & (io_a[11:0] == 12'h124))
+      ESPI_dir <= io_wd[0];
+    if (io_w & (io_a[11:0] == 12'h125))
+      ESPI_quad <= io_wd[0];
 
     if (io_w & (io_a[11:0] == 12'h200))
       dd_oa_reset <= io_wd[0];
@@ -1029,11 +1057,14 @@ module top(
   assign DSPI_MISO = MISO;
   wire [3:0] DSPI_i = {IO3, IO2, MISO, MOSI};
 
-  wire SD_CS = P26;
-  // assign {P20, P18, P19} = SD_CS ? 3'b111 : {1'b0, HSPI[4], HSPI[0]};
-  assign P20 = SD_CS;
-  assign P18 = HSPI[4];
-  assign P19 = HSPI[0];
+  reg ESPI_dir, ESPI_quad;
+  wire [3:0] ESPI_mask;
+  assign ESPI_MISO = P17;
+
+  assign P20 = MUX0[2] ? P26     : (ESPI0[5] | ESPIe[5]);   // CS
+  assign P18 = MUX0[2] ? HSPI[4] : (ESPI0[4] | ESPIe[4]);   // SCK
+  assign P19 = MUX0[2] ? HSPI[0] : (ESPI0[0] | ESPIe[0]);   // MOSI
+  wire [3:0] ESPI_i = {2'b00, P17, 1'b0};
 
   assign E_PD = sysctl[0];
 
@@ -1041,7 +1072,7 @@ module top(
   wire chMISO;
   always @*
     if (P25 == 1'b0)
-      case (MUX0)
+      case (MUX0[1:0])
       2'b01: hMISO <= E_MISO;
       2'b10: hMISO <= MISO;
       default: hMISO <= 1'bz;
