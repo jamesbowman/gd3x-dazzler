@@ -61,14 +61,16 @@ variable swiz
     ;
 
 \ https://pdfs.semanticscholar.org/9ed4/0cc06ae964c7dc944da003ce453cc38e8138.pdf (Table 3)
-: reboot
+: iprog ( d. )
     sync
     $31e1 >icap $ffff >icap
-    $3261 >icap $0000 >icap
-    $3281 >icap $0300 >icap
+    $3261 >icap swap  >icap
+    $3281 >icap $0300 or >icap
     $32a1 >icap $0000 >icap
     $32c1 >icap $0300 >icap
     $3301 >icap $2100 >icap
     $3201 >icap $001F >icap
     $30a1 >icap $000e >icap
     post ;
+
+: reboot 0. iprog ;

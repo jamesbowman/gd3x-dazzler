@@ -4,6 +4,7 @@ decimal
 #include dna.fs
 #include icap.fs
 #include wii.fs
+#include ../build/stamp.fs
 
 : umin 2dup u< if drop else nip then ;
 
@@ -132,6 +133,7 @@ $2188 reg REG_SPI_WIDTH
 
     200 ms
     $b0000. eve! dna >>eve 0 >spi
+    $b0100. eve! stamp >>eve 0 >spi
     ;
 
 : eve?
@@ -301,15 +303,6 @@ create cmd.flash
     ;
 
 \ ------------------------------------------------------------
-    ;
-
-\ ------------------------------------------------------------
-    ;
-
-\ ------------------------------------------------------------
-    ;
-
-\ ------------------------------------------------------------
 
 \ At $80000 block is:
 \ $947a     signature
@@ -423,12 +416,18 @@ create cmd.flash
     $fff and s>d $308000. d+
     eve@. ;
 
+2variable flashoff  \ flash offset for e2fl
+0. flashoff 2!
+
+: addro ( d. )
+    flashoff 2@ d+ addr ;
+
 : e2fl ( d. )
     manufacturer
     DSPI
     dup 1+ 0 do
         cr i .
-        $d8 wcmd 0 i addr notbusy
+        $d8 wcmd 0 i addro notbusy
     loop
 
     CSPI $1000. evea /in/ spi> drop
@@ -437,7 +436,7 @@ create cmd.flash
     $100 um/mod nip 1+
     0 do
         i 100 mod 0= if cr i . then
-        $02 wcmd i $100 um* addr
+        $02 wcmd i $100 um* addro
         $40 0 do
             CSPI spid> DSPI >spid
         loop
@@ -549,3 +548,9 @@ create cmd.flash
 ' cold init !
 
 include fs.fs
+
+: x
+    begin
+        $017 io@ 12 rshift 1 and .
+    again
+;

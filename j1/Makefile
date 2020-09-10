@@ -2,9 +2,12 @@ build/nuc.hex: cross.fs basewords.fs nuc.fs
 	mkdir -p build
 	gforth cross.fs basewords.fs nuc.fs
 
-build/dazzler.hex: build/nuc.hex verilator/bootstrap swapforth.fs swapforth/*.fs
+build/dazzler.hex: build/nuc.hex verilator/bootstrap swapforth.fs swapforth/*.fs build/stamp.fs
 	make -C verilator
 	(cd ./verilator/; ./bootstrap)
+
+build/stamp.fs:
+	python mkstamp.py build/stamp.fs
 
 clean:
 	rm -f build/nuc.hex
@@ -52,4 +55,4 @@ mackextload:
 
 endif
 
-.PHONY: connect clean bootstrap mackextload mackextunload macconnect
+.PHONY: connect clean bootstrap mackextload mackextunload macconnect build/stamp.fs
