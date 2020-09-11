@@ -121,6 +121,11 @@ $2188 reg REG_SPI_WIDTH
     cr ." id: "
     REG_ID eve@ .x ;
 
+\ After eve-start:
+\  EVE is running and ready for commands
+\  Memory b00000 has the IDcode string
+\  Memory b00100 has the build ID string
+
 : eve-start
     $14 ioff 5 ms $14 ion
     0 MUX0
@@ -554,3 +559,10 @@ include fs.fs
         $017 io@ 12 rshift 1 and .
     again
 ;
+
+: loadsd
+    eve-diag
+    /fat32
+    s" _loadflash2.bin" fplay
+    (loadbin)
+    ;
