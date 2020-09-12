@@ -1,6 +1,11 @@
 
+\ bit   2       1       0
+\       WRITE   CE      CLK
+
 : icap!
-    $12 io! ;
+    \ cr dup .
+    $12 io! \ $12 io@ .x2
+    ;
 
 :  icap-idle
     2 icap! ;
@@ -10,55 +15,38 @@
     dup 1+ icap! 
     icap! ;
 
-variable swiz
-
 : >icap ( u )
     7 flip
     $13 io!
     0 icap-clk ;
 
-: icap> ( - u )
-    icap-idle
-    6 icap!
-    $13 io@ .x
-    4 icap-clk
-    $13 io@ .x
-    6 icap!
-    icap-idle
+: icap> ( n - u0 .. un-1 )
+    %010 icap!     \ CE deassert
+    %110 icap!     \ WRITE assert
+    %110 icap-clk
+    %100 icap-clk
+    0 do
+        %100 icap-clk $13 io@ 7 flip
+    loop
+    %110 icap!     \ CE deassert
+    %010 icap!     \ WRITE deassert
+    2 icap-clk
+    %000 icap!     \ CE assert
     ;
 
 : sync
     icap-idle
 
-    $ffff >icap
-    $ffff >icap
-    $ffff >icap
-    $ffff >icap
+    6 0 do
+        $ffff >icap
+    loop
     $aa99 >icap
     $5566 >icap ;
 
 : post
-    $2000 >icap $2000 >icap
-    $2000 >icap $2000 >icap
-    $2000 >icap $2000 >icap
-    $2000 >icap $2000 >icap
-    ;
-
-: x
-    sync
-    $2000 >icap     \ NOOP
-    $2000 >icap     \ NOOP
-    $2901 >icap     \ Write Type1 packet header to read STAT register
-    $2000 >icap     \ NOOP
-    $2000 >icap     \ NOOP
-    $2000 >icap     \ NOOP
-    $2000 >icap     \ NOOP
-    icap>           \ Read one word from the STAT register to the configuration interface
-    $30A1 >icap     \ Type 1 Write 1 Word to CMD
-    $000D >icap     \ DESYNC Command
-    $2000 >icap     \ NOOP
-    $2000 >icap     \ NOOP
-    ;
+    8 0 do
+        $2000 >icap
+    loop ;
 
 \ https://pdfs.semanticscholar.org/9ed4/0cc06ae964c7dc944da003ce453cc38e8138.pdf (Table 3)
 : iprog ( d. )
@@ -74,3 +62,23 @@ variable swiz
     post ;
 
 : reboot 0. iprog ;
+
+: icap@ ( a u -- n... )
+    sync
+    $2000 >icap     \ NOOP
+    swap 5 lshift
+    over or
+    $2800 or >icap
+    $2000 >icap     \ NOOP
+    $2000 >icap     \ NOOP
+    $2000 >icap     \ NOOP
+    $2000 >icap     \ NOOP
+    icap>
+    $30A1 >icap     \ Type 1 Write 1 Word to CMD
+    $000D >icap     \ DESYNC Command
+    post ;
+
+: icap?
+    $23 $00 do
+        cr i .x2 i 1 icap@ .x
+    loop ;
