@@ -1,4 +1,3 @@
-
 \ bit   2       1       0
 \       WRITE   CE      CLK
 
@@ -63,7 +62,7 @@
 
 : reboot 0. iprog ;
 
-: icap@ ( a u -- n... )
+: micap@ ( a u -- n... )
     sync
     $2000 >icap     \ NOOP
     swap 5 lshift
@@ -78,7 +77,9 @@
     $000D >icap     \ DESYNC Command
     post ;
 
+: icap@ 1 micap@ ;
+
 : icap?
     $23 $00 do
-        cr i .x2 i 1 icap@ .x
+        cr i .x2 i icap@ .x
     loop ;

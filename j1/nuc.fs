@@ -1076,18 +1076,22 @@ header refill
     then
 ;
 
+: sourceid!
+    sourceid ! ;
+
 header evaluate
 :noname
     source >r >r >in @ >r
-    source-id >r d# -1 sourceid !
+    source-id >r true sourceid!
     source! 0>in
     interpret
-    r> sourceid !
+    r> sourceid!
     r> >in! r> r> source!
 ;
 
 header quit
 : quit
+    d# 0 sourceid!
     begin
         refill drop
         interpret

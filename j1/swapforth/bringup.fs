@@ -126,6 +126,12 @@ $2188 reg REG_SPI_WIDTH
 \  Memory b00000 has the IDcode string
 \  Memory b00100 has the build ID string
 
+: eve-ready
+    250 0 do
+        REG_ID eve@ $7c = if unloop exit then
+        1 ms
+    loop ;
+
 : eve-start
     $14 ioff 5 ms $14 ion
     0 MUX0
@@ -136,7 +142,7 @@ $2188 reg REG_SPI_WIDTH
 \   $48     host        \ internal clock
     $00     host
 
-    200 ms
+    eve-ready
     $b0000. eve! dna >>eve 0 >spi
     $b0100. eve! stamp >>eve 0 >spi
     ;
@@ -295,6 +301,9 @@ create cmd.flash
     true i2c-ok
     and 6 passed ;
 
+: check-clock
+    true 7 passed ;
+
 : eve-diag
     eve-start
     cmd.bringup commands
@@ -305,6 +314,7 @@ create cmd.flash
     check-eveq
     check-bus
     check-i2c
+    check-clock
     ;
 
 \ ------------------------------------------------------------
@@ -352,7 +362,7 @@ create cmd.flash
 : poweron
     eve-start
     0 playstream
-    1 MUX0
+    5 MUX0
     ;
 
 \ ------------------------------------------------------------
@@ -402,9 +412,10 @@ create cmd.flash
 \ ------------------------------------------------------------
 
 
-: fl.dump (  )
-    0. read
-    1024 0 do
+: fl.dump ( a. u )
+    -rot
+    read
+    0 do
         spi> .x2
     loop ;
 
@@ -539,18 +550,53 @@ create cmd.flash
     (loadbin)
     ;
 
+
+: autoexec
+    $13 icap@ $14 icap@ $ff and   \ recover the base load address
+    $54000. d+                      \ first 4K after .bit
+    DSPI read
+    $3f80 dup                       \ top of RAM
+    begin
+        spi> dup $ff <>
+    while
+        over c! 1+
+    repeat
+    drop over -
+    2dup type
+    evaluate ;
+
+: general5
+    $17 icap@ ;
+
+: sep space '|' emit space ;
+
 : cold
-    ." cold " dna type space
+    ." cold"                    sep
+    dna type                    sep
+    stamp type                  sep
+    ." GENERAL5=" general5 .x   sep
+
+    general5 $DA22 = if
+        eve-diag loadbin begin again
+    then
     200 ms key? if
         quit
     else
         \ poweron wii-main
-
-        eve-diag
-        loadbin
-        begin again
+        autoexec
+        quit
     then ;
 ' cold init !
+
+: put ( c a dst. )
+    DSPI
+    2dup $20 wcmd addr notbusy
+    $02 wcmd addr
+
+    bounds ?do
+        i c@ >spi
+    loop
+    notbusy ;
 
 include fs.fs
 
