@@ -9,6 +9,8 @@ import struct
 import os
 import codecs
 
+from PIL import Image
+
 import dpansf
 
 if sys.version_info[0] < 3:
@@ -18,7 +20,6 @@ class Bye(Exception):
     pass
 
 def collect_screenshot(dest, ser):
-    import Image
     t0 = time.time()
     match = b"!screenshot"
     have = b"X" * len(match)
@@ -31,31 +32,33 @@ def collect_screenshot(dest, ser):
         imd = ser.read(4 * w * h)
         im = Image.fromstring("RGBA", (w, h), imd)
     else:
-        # print [ord(c) for c in ser.read(20)]
+        # print [c for c in ser.read(20)]
         def getn():
-            b = ord(ser.read(1))
+            b = ser.read(1)[0]
             n = b
             while b == 255:
-                b = ord(ser.read(1))
+                b = ser.read(1)[0]
                 n += b
-            # print '  length', n
             return n
                 
-        imd = ""
+        imd = b""
+        BPP = 3
         for y in range(h):
             print('line', y)
-            prev = 4 * chr(0)
-            d = ""
-            while len(d) < 4 * w:
-                # print '  have', len(d) / 4
+            prev = BPP * b'\x00'
+            d = b""
+            while len(d) < BPP * w:
+                # print '  have', len(d) / BPP
                 d += prev * getn()
-                d += ser.read(4 * getn())
-                prev = d[-4:]
-            assert len(d) == 4 * w, 'corrupted screen dump stream'
+                d += ser.read(BPP * getn())
+                prev = d[-BPP:]
+            assert len(d) == BPP * w, 'corrupted screen dump stream'
             imd += d
-        im = Image.fromstring("RGBA", (w, h), imd)
-    (b,g,r,a) = im.split()
-    im = Image.merge("RGBA", (r, g, b, a))
+            # print(list(d[:4]))
+        im = Image.frombytes("RGB", (w, h), imd)
+    if BPP == 4:
+        (b,g,r,a) = im.split()
+        im = Image.merge("RGBA", (r, g, b, a))
     im.convert("RGB").save(dest)
     took = time.time() - t0
     print('took %.1fs. Wrote RGB image to %s' % (took, dest))
@@ -274,7 +277,7 @@ class TetheredTarget:
                 ser.write(b'\r')
             else:
                 dest = cmd[1]
-                ser.write(b'GD.screenshot\r\n')
+                ser.write(b'screenshot\r\n')
                 collect_screenshot(dest, ser)
                 ser.write(b'\r\n')
         elif cmd.startswith('#movie'):

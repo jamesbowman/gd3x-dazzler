@@ -105,7 +105,7 @@ junk += $(project).mcs $(project).bin $(project).cfi $(project).prm
 
 $(project).bit: $(project)_par.ncd
 	$(xil_env); \
-	bitgen $(intstyle) -g UserID:0x09470947 -g DriveDone:yes -g StartupClk:Cclk -g ConfigRate:26 -g next_config_register_write:Disable -w $(project)_par.ncd $(project).bit
+	bitgen $(intstyle) -g UserID:0x09470947 -g DriveDone:yes -g StartupClk:Cclk -g ConfigRate:26 -g next_config_register_write:Disable -g INIT_9K:yes -w $(project)_par.ncd $(project).bit
 	# bitgen $(intstyle) -g compress -g UserID:0x09470947 -g DriveDone:yes -g StartupClk:Cclk -w $(project)_par.ncd $(project).bit
 	# bitgen $(intstyle) -g UserID:0x09470947 -g DriveDone:yes -g StartupClk:Cclk -w $(project)_par.ncd $(project).bit
 junk += $(project).bgn $(project).bit $(project).drc $(project)_bd.bmm

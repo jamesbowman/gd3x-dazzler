@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
 `default_nettype none
 
-`define TX(n)      CLK <= 1'b0; I = (n); #30; CLK <= 1'b1; #30;
+`define TX(n)      CLK <= 1'b0; I = (n); #3000; CLK <= 1'b1; #3000;
 
 module top();
   reg [15:0] I;
@@ -55,17 +55,13 @@ ICAP_SPARTAN6 _icap (
 
     `TX(16'h2000);
     `TX(16'h2000);
-    `TX(16'h2901);
-    `TX(16'h2000);
-    `TX(16'h2000);
-    `TX(16'h2000);
-    `TX(16'h2000);
+    `TX(16'h29c1);
 
-    CLK = 0; #30;
-    CE = 1; #30;
-    WRITE = 1; #30;
-    CLK = 1; #30; CLK = 0; #30;
-    CE = 0; #30;
+    CLK = 0; #3000;
+    CE = 1; #3000;
+    WRITE = 1; #3000;
+    CLK = 1; #3000; CLK = 0; #3000;
+    CE = 0; #3000;
 
     `TX(16'h2000);
     `TX(16'h2000);
