@@ -4,6 +4,7 @@ DEV="/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DO02C6GR-if00-port0"
 # python textmode.py $DEV
 for F in `cat passlist`
 do
+  echo "---------------" $F
   python reference.py $F
   gforth textmode.fs $F
   hd out

@@ -288,7 +288,6 @@ class Textmode:
                     if s:
                         return int(s)
                     return n
-                print('control', repr(c))
                 if c == b'A':
                     cy = max(0, (cy - default(args, 1)))
                 elif c == b'B':
