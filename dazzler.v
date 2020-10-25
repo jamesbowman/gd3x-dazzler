@@ -695,6 +695,59 @@ module top(
   reg dd_oa_reset;
   reg [31:0] dd_o, dd_a;
 
+  // ------------------------------------------------------------------------
+
+  wire clk6502;
+  wire [7:0] dvgd;
+  reg [12:0] dvga;
+  reg m6502_reset = 1'b1, m6502_run = 1'b0;
+  reg m6502_clk = 1'b1;
+  wire [15:0] m6502_debug;
+  wire clkout_i;
+
+`ifdef KIPPER
+  DCM_CLKGEN #(
+  .CLKFX_MD_MAX(0.0),     // Specify maximum M/D ratio for timing anlysis
+  .CLKFX_MULTIPLY(4),    // Multiply value - M - (2-256)
+  .CLKFX_DIVIDE(1),      // Divide value - D - (1-256)
+
+  .CLKIN_PERIOD(166.00),   // Input clock period specified in nS
+  .STARTUP_WAIT("FALSE")  // Delay config DONE until DCM_CLKGEN LOCKED (TRUE/FALSE)
+  )
+  CLK6502 (
+  .CLKFX(clkout_i),        // 1-bit output: Generated clock output
+  .CLKIN(CLK),            // 1-bit input: Input clock
+  .FREEZEDCM(0),          // 1-bit input: Prevents frequency adjustments to input clock
+  .PROGCLK(0),            // 1-bit input: Clock input for M/D reconfiguration
+  .PROGDATA(0),           // 1-bit input: Serial data input for M/D reconfiguration
+  .PROGEN(0),             // 1-bit input: Active high program enable
+  .RST(0)                 // 1-bit input: Reset input pin
+  );
+
+  // BUFG BUFG_6502 ( .I(clkout_i), .O(clk6502));
+`endif
+  wire dvg_go;
+
+  asteroids _asteroids (
+    .fastclk(cpuclk),
+    .reset(m6502_reset),
+    .run(m6502_run),
+    .sw1start(1'b0),
+    .GODVG(dvg_go),
+    .dvgclk(cpuclk),
+    .dvga(dvga),
+    .dvgd(dvgd),
+    .debug(m6502_debug)
+  );
+
+  reg dvg_go_flag = 0;
+  always @(posedge cpuclk) begin
+    if (dvg_go)
+      dvg_go_flag <= ~dvg_go_flag;
+  end
+
+  // ------------------------------------------------------------------------
+
   // 5    4    3    2    1    0
   // CS   SCK  IO3  IO2  MISO MOSI
 
@@ -732,6 +785,10 @@ module top(
     ((io_a[11:0] == 12'h203) ? dd_a[31:16] : 16'd0) |                             // video bus debug
 
     ((io_a[11:0] == 12'h204) ? {15'd0, dna_dout} : 16'd0) |                       // DNA_PORT serial out
+
+    ((io_a[11:0] == 12'h300) ? {8'd0, dvgd} : 16'd0) |                            // 
+    ((io_a[11:0] == 12'h301) ? m6502_debug : 16'd0) |                             // 
+    ((io_a[11:0] == 12'h302) ? {15'd0, dvg_go_flag} : 16'd0) |                    // 
 
     (io_a[12] ? {8'd0, uart0_data} : 16'd0) | 
     (io_a[13] ? {11'd0, 1'b0, 1'b0, 1'b0, uart0_valid, !uart0_busy} : 16'd0);
@@ -805,6 +862,11 @@ module top(
 
     if (io_w & (io_a[11:0] == 12'h204))
       {dna_read, dna_shift, dna_clk} <= io_wd[2:0];
+
+    if (io_w & (io_a[11:0] == 12'h300))
+      dvga <= io_wd[12:0];
+    if (io_w & (io_a[11:0] == 12'h301))
+      {m6502_run, m6502_reset} <= io_wd[1:0];
 
   end
 

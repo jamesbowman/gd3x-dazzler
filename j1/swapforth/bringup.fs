@@ -86,21 +86,24 @@ CSPI /spi/
 $2000 reg REG_ID
 $2004 reg REG_FRAMES
 $2008 reg REG_CLOCK
+$2034 reg REG_HSIZE
+$2048 reg REG_VSIZE
 $2070 reg REG_PCLK
 $2088 reg REG_SOUND
 $208c reg REG_PLAY
 $20d8 reg REG_MACRO_0
 $20fc reg REG_CMD_WRITE
 $2180 reg REG_TRIM
+$2188 reg REG_SPI_WIDTH
 $2574 reg REG_CMDB_SPACE
 $2578 reg REG_CMDB_WRITE
 $25f0 reg REG_FLASH_STATUS
-$2188 reg REG_SPI_WIDTH
 
 : evea ( a. - u )
     sel /out/ >spi >< >spiw ;
 
-: eve@ ( a. - u ) evea /in/ spi> drop spiw> ;
+: (eve@) ( a. ) evea /in/ spi> drop ;
+: eve@ ( a. - u ) (eve@) spiw> ;
 
 : eve@. ( a. - d. )
     eve@ spiw> ;
@@ -612,3 +615,63 @@ include fs.fs
     s" _loadflash2.bin" fplay
     (loadbin)
     ;
+
+\ ------------------------------------------------------------
+
+: slot1
+    $100000. flashoff 2!
+    eve-diag
+    loadbin
+    $100000. iprog
+;
+
+: dvg?
+    cr ." DUMP"
+    2048 0 do
+        i 31 and 0= if cr i .x space space then
+        i $300 io! $300 io@ .x2
+    loop
+    ;
+
+: c $301 io! ;
+: run
+    1 c 1 ms 0 c
+    2 c
+    30 0 do
+        cr $301 io@ .x
+    loop ;
+
+: dvg@
+    2* dup $300 io! $300 io@
+    swap 1+ $300 io! $300 io@
+    >< or ;
+
+#include dvg.fs
+
+: x
+    0 mux0
+    CSPI
+    0
+    begin
+        stream dvg-preamble
+        2 c
+        $302 io@
+        begin dup $302 io@ <> until
+        drop
+        0 c
+
+        render finish
+        REG_FRAMES eve@ tuck - -1 <> if cr ." dropped" .s then
+    again
+    ;
+
+: s
+        stream dvg-preamble
+        2 c
+        $302 io@
+        begin dup $302 io@ <> until
+        drop
+        0 c
+        render finish
+        dvg?
+;
