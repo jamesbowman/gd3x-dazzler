@@ -199,6 +199,17 @@ class Textmode:
         gd.cmd_memcpy(a + self.cz, BG, 2)
 
 
+    def dump_fs(self):
+        with open("_textmode.fs", "wt") as f:
+            f.write("%d constant t.fm\n" % self.fm)
+            f.write("%d constant t.ca\n" % self.caddr(0, 0, 0))
+            f.write("%d constant t.ca1\n" % (2 * self.W * self.H))
+            fb = self.gaddr(0, 0)
+            f.write("%d constant t.fb\n" % fb)
+            f.write("%d constant t.g\n" % (self.w2 * self.h))
+            f.write("%d constant t.W\n" % self.W)
+            f.write("%d constant t.H\n" % self.H)
+
     def home(self):
         self.cursor = (0, 0)
 
