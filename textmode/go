@@ -2,4 +2,10 @@ set -e
 
 DEV="/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DO02C6GR-if00-port0"
 # python textmode.py $DEV
-python reference.py
+for F in `cat passlist`
+do
+  python reference.py $F
+  gforth textmode.fs $F
+  hd out
+  diff $F.ref out
+done

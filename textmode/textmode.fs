@@ -6,7 +6,7 @@ create c 1 allot
 : getc
     c 1 ans read-file throw
     0= if
-        cr ." FINISHED " .s cr
+        cr ." FINISHED " .s cr depth 0<> throw
         out close-file drop
         bye
     then
@@ -30,15 +30,20 @@ include _textmode.fs
 : cmd_memcpy ( dst src n )
     $1d cmd ;
 
+variable cx variable cy
+0 cx ! 0 cy !
+
 : process
     cmd_memcpy
-    t.fb 0 >gd
+    t.fb 0 cx @ t.g um* d+ >gd
     $20 - t.g *
     t.fm + w>gd
     t.g w>gd
 
     cmd_memcpy
-    t.ca dup w>gd
+    t.ca 
+    cx @ 2* +
+    dup w>gd
     FG w>gd
     2 w>gd
 
@@ -46,6 +51,8 @@ include _textmode.fs
     t.ca1 + w>gd
     BG w>gd
     2 w>gd
+
+    1 cx +!
     ;
 
 :noname
