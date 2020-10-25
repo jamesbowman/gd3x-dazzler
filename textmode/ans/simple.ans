@@ -1,0 +1,13 @@
+
+
+
+
+
+
+
+
+    Dazzler listens on a serial line and emulates a terminal, generating
+    output on a standard VGA connector. It gives embedded microcontrollers
+    a real console.
+
+
