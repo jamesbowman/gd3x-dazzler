@@ -242,6 +242,7 @@ class Textmode:
                 fg = (g - 30) | (fg & 8)
             elif g == 39:
                 fg = 7 | (fg & 8)
+                print('fg', fg)
             elif 40 <= g <= 47:
                 bg = (g - 40) | (bg & 8)
             elif g == 49:
@@ -288,6 +289,7 @@ class Textmode:
                     if s:
                         return int(s)
                     return n
+                print('code', c)
                 if c == b'A':
                     cy = max(0, (cy - default(args, 1)))
                 elif c == b'B':

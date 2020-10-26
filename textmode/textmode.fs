@@ -83,34 +83,64 @@ variable pa
         arg
         dup 0< invert
     while
+        \ cr dup .
         case
         0 of    2drop 7.                    endof
         1 of    swap 8 or swap              endof
         5 of    8 or                        endof
         38 of   swap c256 swap              endof
-        39 of   swap 8 and swap             endof
+        39 of   swap 8 and 7 or swap        endof
         48 of   c256                        endof
-        49 of   8 and 7 or                  endof
+        49 of   8 and                       endof
         dup 30 38 within if 30 - rot swap cop swap 0 then
         dup 40 48 within if 40 - cop 0 then
         endcase
+        \ .s
     repeat
     drop
     2dup colors 2!
     BG setcolor FG setcolor
     ;
 
+: cursor
+    cy @ t.W * cx @ + ;
+    
+: cleos ( u )
+    cursor
+    t.ca1 1- over - 2*
+    swap 2* t.ca +
+
+    cmd_memcpy
+    dup w>gd
+    BG w>gd
+    2 w>gd
+
+    cmd_memcpy
+    dup 2 + w>gd
+    w>gd
+    w>gd
+    ;
+    
 : csi
     getc '[' <> if exit then
     getargs     ( k )
     case
     'm' of sgr endof
+    'C' of
+        cx @ argv @ 1 max +  t.W 1- min cx !
+    endof
+    'J' of
+        arg 0 max 0 <> if
+            0 cx ! 0 cy !
+        then
+        cleos
+    endof
     endcase
 ;
 
 : plain
     cmd_memcpy
-    cy @ t.W * cx @ + dup >r
+    cursor dup >r
     t.g um*
     t.fb 0
     d+ >gd

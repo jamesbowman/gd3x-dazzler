@@ -29,6 +29,6 @@ if __name__ == "__main__":
         t.render(getc)
     with open(fn + ".ref", "wb") as f:
         f.write(gd.pb)
-    if 1:
+    if 0:
         [print("%08x" % x) for x in array.array("I", gd.pb)]
         print()

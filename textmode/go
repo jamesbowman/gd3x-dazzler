@@ -8,5 +8,6 @@ do
   python reference.py $F
   gforth textmode.fs $F
   # hd out
-  diff $F.ref out
+  diff $F.ref out ||
+  ( python cmp.py $F.ref out ; false )
 done
