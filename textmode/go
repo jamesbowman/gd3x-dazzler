@@ -7,6 +7,6 @@ do
   echo "---------------" $F
   python reference.py $F
   gforth textmode.fs $F
-  hd out
+  # hd out
   diff $F.ref out
 done

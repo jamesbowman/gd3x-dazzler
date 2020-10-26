@@ -32,7 +32,8 @@ include _textmode.fs
 
 variable cx variable cy     0 cx ! 0 cy !
 2variable colors            7. colors 2!
-create args 8 cells allot
+create argv 10 cells allot
+variable pa
 
 : number ( -- k u )
     0
@@ -44,22 +45,30 @@ create args 8 cells allot
     repeat
     swap ;
 
-: getargs ( nargs k )
-    args 8 cells erase
+: getargs ( k )
+    argv 10 cells -1 fill
+    argv pa !
     8 0 do
-        number args i cells + !
+        number argv i cells + !
         dup ';' <> if
-            i 1+ swap unloop exit
+            unloop exit
         then
         drop
     loop
     \ xxx
     ;
 
+: arg
+    pa @ @
+    1 cells pa +! ;
+
 : cop ( color code )
-    10 mod
-    swap 8 and +
-    ;
+    swap 8 and + ;
+
+: c256 ( color -- color )
+    arg 5 = if
+        drop arg
+    then ;
 
 : setcolor
     cmd_memcpy
@@ -68,27 +77,32 @@ create args 8 cells allot
     2 w>gd
     ;
 
-: sgr ( n )
+: sgr
     colors 2@
-    rot 0 ?do
-        args i cells + @
+    begin
+        arg
+        dup 0< invert
+    while
         case
         0 of    2drop 7.                    endof
         1 of    swap 8 or swap              endof
         5 of    8 or                        endof
-        39 of   8 and 7 or                  endof
-        49 of   swap 8 and swap             endof
-        dup 30 38 within if >r swap r> cop swap 0 then
-        dup 40 48 within if cop 0 then
+        38 of   swap c256 swap              endof
+        39 of   swap 8 and swap             endof
+        48 of   c256                        endof
+        49 of   8 and 7 or                  endof
+        dup 30 38 within if 30 - rot swap cop swap 0 then
+        dup 40 48 within if 40 - cop 0 then
         endcase
-    loop
+    repeat
+    drop
     2dup colors 2!
     BG setcolor FG setcolor
     ;
 
 : csi
     getc '[' <> if exit then
-    getargs     ( nargs k )
+    getargs     ( k )
     case
     'm' of sgr endof
     endcase
