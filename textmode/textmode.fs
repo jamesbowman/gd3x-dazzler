@@ -109,21 +109,36 @@ variable pa
 
 : cursor
     cy @ t.W * cx @ + ;
-    
-: cleos ( u )
-    cursor
-    t.ca1 1- over - 2*
-    swap 2* t.ca +
 
+: ++ ( a b u -- a+u b+u )
+    tuck + >r + r> ;
+
+: aclr ( a0 a1 )
     cmd_memcpy
-    dup w>gd
+    over w>gd
     BG w>gd
     2 w>gd
 
     cmd_memcpy
-    dup 2 + w>gd
-    w>gd
-    w>gd
+    over 2 + w>gd
+    over w>gd
+    swap - 2 - w>gd
+    ;
+
+: aclr2
+    2dup aclr t.ca1 ++ aclr ;
+
+:  lineclr ( x0 x1 )
+    2* swap 2* swap
+    cy @ t.W * 2* t.ca +
+    ++                  ( a0 a1 )
+    aclr2 ;
+
+: cleos ( u )
+    cursor 2* t.ca1
+    t.ca ++
+    cr .s
+    aclr2
     ;
 
 : a0
@@ -156,6 +171,15 @@ variable pa
         then
         cleos
     endof
+    'K' of
+        arg 0 max
+        case
+        0 of cx @ t.W        lineclr endof
+        1 of 0 cx @ 1+       lineclr endof
+        2 of 0 t.W           lineclr endof
+        endcase
+    endof
+
     's' of cx @ cy @ csave 2! endof
     'u' of csave 2@ cy ! cx ! endof
 
@@ -193,19 +217,17 @@ variable pa
     then
     ;
 
-: process
-    case
-    10 of 1 cy +! endof
-    13 of 0 cx ! endof
-    27 of csi endof
-    dup plain
-    endcase
-    ;
-
-:noname
+: terminal
     begin
         getc
-        process
+        case
+        10 of 1 cy +! endof
+        13 of 0 cx ! endof
+        27 of csi endof
+        dup plain
+        endcase
     again
-; execute
+    ;
+
+terminal
 bye

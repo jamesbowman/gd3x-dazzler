@@ -209,12 +209,17 @@ class Textmode:
             f.write("%d constant t.W\n" % self.W)
             f.write("%d constant t.H\n" % self.H)
 
-    def cls(self):
+    def clr(self, p0, p1):
+        for z in (0,1):
+            a0 = self.caddr(p0[0], p0[1], z)
+            a1 = self.caddr(p1[0], p1[1], z)
+            print('a0,a1', p0, p1, a0, a1)
+            self.aclr(a0, a1)
+
+    def aclr(self, a0, a1):
         gd = self.gd
-        a = self.caddr(0, 0, 0)
-        s = self.caddr(0, 0, 2) - a
-        gd.cmd_memcpy(a, 0, 2)
-        gd.cmd_memcpy(a + 2, a, s - 2)
+        gd.cmd_memcpy(a0, 0, 2)
+        gd.cmd_memcpy(a0 + 2, a0, (a1 - a0) - 2)
 
     def pattern(self):
         for i in range(self.W):
@@ -300,15 +305,19 @@ class Textmode:
                         (cx, cy) = (aa[1] - 1, aa[0] - 1)
                     else:
                         (cx, cy) = (0, aa[0] - 1)
-                elif c == b'J':
+                elif c == b'K':
                     c = default(args, 0)
                     if c == 0:
-                        self.clrteol()
+                        self.clr((cx, cy), (self.W, cy))
+                    elif c == 1:
+                        self.clr((0, cy), (cx + 1, cy))
                     elif c == 2:
+                        self.clr((0, cy), (self.W, cy))
+                elif c == b'J':
+                    c = default(args, 0)
+                    if c in (2, 3):
                         (cx, cy) = (0, 0)
-                        self.cls()
-                    else:
-                        assert 0, c
+                    self.clr((cx, cy), (0, self.H))
                 elif c == b's':
                     cs.append((cx, cy))
                 elif c == b'u':
