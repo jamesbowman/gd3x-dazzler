@@ -31,6 +31,7 @@ include _textmode.fs
     $1d cmd ;
 
 variable cx variable cy     0 cx ! 0 cy !
+2variable csave
 2variable colors            7. colors 2!
 create argv 10 cells allot
 variable pa
@@ -126,10 +127,6 @@ variable pa
 : a0
     arg 1 max ;
 
-: 2args
-    argv @ present
-    [ argv 1 cells + ] literal @ present and ;
-
 : csi
     getc '[' <> if exit then
     getargs     ( k )
@@ -138,17 +135,18 @@ variable pa
     'A' of
         cy @ a0 - 0 max cy !
     endof
+    'B' of
+        cy @ a0 + t.H 1- min cy !
+    endof
     'C' of
         cx @ a0 +  t.W 1- min cx !
     endof
+    'D' of
+        cx @ a0 -  0 max cx !
+    endof
     'H' of
-        2args if
-            a0 1-
-        else
-            0
-        then
-        cx !
         a0 1- cy !
+        a0 1- cx !
     endof
     'J' of
         arg 1 > if
@@ -156,6 +154,10 @@ variable pa
         then
         cleos
     endof
+    's' of cx @ cy @ csave 2! endof
+    'u' of csave 2@ cy ! cx ! endof
+
+    cr ." Unhandled >>> " emit 1 throw
     endcase
 ;
 
@@ -183,6 +185,10 @@ variable pa
     2 w>gd
 
     1 cx +!
+    cx @ t.W = if
+        0 cx !
+        1 cy +!
+    then
     ;
 
 : process

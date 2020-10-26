@@ -284,7 +284,7 @@ class Textmode:
                     if s:
                         return int(s)
                     return n
-                print('code', c)
+                print('code', c, args)
                 if c == b'A':
                     cy = max(0, (cy - default(args, 1)))
                 elif c == b'B':
@@ -297,7 +297,6 @@ class Textmode:
                 elif c in b'Hf':
                     aa = [default(a, 1) for a in args.split(b';')]
                     if len(aa) == 2:
-                        assert 0
                         (cx, cy) = (aa[1] - 1, aa[0] - 1)
                     else:
                         (cx, cy) = (0, aa[0] - 1)
