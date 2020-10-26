@@ -179,7 +179,6 @@ class Textmode:
 
         gd.swap()
 
-        self.home()
         self.colors = (7, 0)
 
     def gaddr(self, x, y):
@@ -210,16 +209,12 @@ class Textmode:
             f.write("%d constant t.W\n" % self.W)
             f.write("%d constant t.H\n" % self.H)
 
-    def home(self):
-        self.cursor = (0, 0)
-
     def cls(self):
         gd = self.gd
         a = self.caddr(0, 0, 0)
         s = self.caddr(0, 0, 2) - a
         gd.cmd_memcpy(a, 0, 2)
         gd.cmd_memcpy(a + 2, a, s - 2)
-        self.home()
 
     def pattern(self):
         for i in range(self.W):
@@ -262,7 +257,7 @@ class Textmode:
         self.colors = (fg, bg)
 
     def render(self, getc):
-        (cx, cy) = self.cursor
+        (cx, cy) = (0, 0)
         cs = []
         gd = self.gd
         while True:
@@ -302,6 +297,7 @@ class Textmode:
                 elif c in b'Hf':
                     aa = [default(a, 1) for a in args.split(b';')]
                     if len(aa) == 2:
+                        assert 0
                         (cx, cy) = (aa[1] - 1, aa[0] - 1)
                     else:
                         (cx, cy) = (0, aa[0] - 1)
@@ -310,6 +306,7 @@ class Textmode:
                     if c == 0:
                         self.clrteol()
                     elif c == 2:
+                        (cx, cy) = (0, 0)
                         self.cls()
                     else:
                         assert 0, c
@@ -322,6 +319,7 @@ class Textmode:
                 else:
                     print('seq %s: ' % c, args)
             else:
+                print(cx, cy)
                 self.drawch(cx, cy, c[0])
                 cx += 1
                 if cx == self.W:

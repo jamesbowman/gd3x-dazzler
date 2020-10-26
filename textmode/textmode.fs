@@ -35,6 +35,8 @@ variable cx variable cy     0 cx ! 0 cy !
 create argv 10 cells allot
 variable pa
 
+: present   0< invert ;
+
 : number ( -- k u )
     0
     begin
@@ -81,7 +83,7 @@ variable pa
     colors 2@
     begin
         arg
-        dup 0< invert
+        dup present
     while
         \ cr dup .
         case
@@ -124,6 +126,10 @@ variable pa
 : a0
     arg 1 max ;
 
+: 2args
+    argv @ present
+    [ argv 1 cells + ] literal @ present and ;
+
 : csi
     getc '[' <> if exit then
     getargs     ( k )
@@ -135,8 +141,17 @@ variable pa
     'C' of
         cx @ a0 +  t.W 1- min cx !
     endof
+    'H' of
+        2args if
+            a0 1-
+        else
+            0
+        then
+        cx !
+        a0 1- cy !
+    endof
     'J' of
-        arg 0 max 0 <> if
+        arg 1 > if
             0 cx ! 0 cy !
         then
         cleos
@@ -145,6 +160,7 @@ variable pa
 ;
 
 : plain
+    cr cx @ . cy @ .
     cmd_memcpy
     cursor dup >r
     t.g um*
