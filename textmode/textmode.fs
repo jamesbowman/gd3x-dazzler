@@ -137,7 +137,6 @@ variable pa
 : cleos ( u )
     cursor 2* t.ca1
     t.ca ++
-    cr .s
     aclr2
     ;
 
