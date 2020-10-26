@@ -1,4 +1,6 @@
 
+warnings off
+
 next-arg r/o bin open-file drop constant ans
 s" out" w/o bin create-file drop constant out
 
@@ -162,7 +164,7 @@ variable pa
 ;
 
 : plain
-    cr cx @ . cy @ .
+    \ cr cx @ . cy @ .
     cmd_memcpy
     cursor dup >r
     t.g um*

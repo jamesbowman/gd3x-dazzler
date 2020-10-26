@@ -284,7 +284,7 @@ class Textmode:
                     if s:
                         return int(s)
                     return n
-                print('code', c, args)
+                # print('code', c, args)
                 if c == b'A':
                     cy = max(0, (cy - default(args, 1)))
                 elif c == b'B':
@@ -318,7 +318,7 @@ class Textmode:
                 else:
                     print('seq %s: ' % c, args)
             else:
-                print(cx, cy)
+                # print(cx, cy)
                 self.drawch(cx, cy, c[0])
                 cx += 1
                 if cx == self.W:
