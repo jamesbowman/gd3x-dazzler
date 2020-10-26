@@ -120,14 +120,20 @@ variable pa
     w>gd
     w>gd
     ;
-    
+
+: a0
+    arg 1 max ;
+
 : csi
     getc '[' <> if exit then
     getargs     ( k )
     case
     'm' of sgr endof
+    'A' of
+        cy @ a0 - 0 max cy !
+    endof
     'C' of
-        cx @ argv @ 1 max +  t.W 1- min cx !
+        cx @ a0 +  t.W 1- min cx !
     endof
     'J' of
         arg 0 max 0 <> if
