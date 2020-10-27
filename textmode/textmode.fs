@@ -35,7 +35,7 @@ include _textmode.fs
 2variable cy                    \ so "cy 2@" is ( x y )
 cy cell+ constant cx
 0. cy 2!
-
+variable yo 0 yo !
 2variable csave
 2variable colors            7. colors 2!
 create argv 10 cells allot
@@ -186,6 +186,13 @@ variable pa
 
 : down1
     1 cy +!
+    cy @ t.H 1- = if
+        \ 1 yo +!
+        \ -1 cy +!
+        \ cmd_memwrite
+        \ $3020d8. >gd
+        \ 4 w>gd
+    then
 ;
 
 : plain
