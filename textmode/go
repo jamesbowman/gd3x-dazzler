@@ -11,3 +11,4 @@ do
   diff $F.ref out ||
   ( python cmp.py $F.ref out ; false )
 done
+wc -w textmode.fs

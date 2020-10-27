@@ -32,7 +32,10 @@ include _textmode.fs
 : cmd_memcpy ( dst src n )
     $1d cmd ;
 
-variable cx variable cy     0 cx ! 0 cy !
+2variable cy                    \ so "cy 2@" is ( x y )
+cy cell+ constant cx
+0. cy 2!
+
 2variable csave
 2variable colors            7. colors 2!
 create argv 10 cells allot
@@ -46,7 +49,7 @@ variable pa
         getc
         dup $30 $3a within
     while
-        swap 10 * swap $30 - +
+        $30 - swap 10 * +
     repeat
     swap ;
 
@@ -108,7 +111,7 @@ variable pa
     ;
 
 : cursor
-    cy @ t.W * cx @ + ;
+    cy 2@ t.W * + ;
 
 : ++ ( a b u -- a+u b+u )
     tuck + >r + r> ;
@@ -125,7 +128,7 @@ variable pa
     swap - 2 - w>gd
     ;
 
-: aclr2
+: aclr2 ( a0 a1 )
     2dup aclr t.ca1 ++ aclr ;
 
 :  lineclr ( x0 x1 )
@@ -133,12 +136,6 @@ variable pa
     cy @ t.W * 2* t.ca +
     ++                  ( a0 a1 )
     aclr2 ;
-
-: cleos ( u )
-    cursor 2* t.ca1
-    t.ca ++
-    aclr2
-    ;
 
 : a0
     arg 1 max ;
@@ -166,9 +163,11 @@ variable pa
     endof
     'J' of
         arg 1 > if
-            0 cx ! 0 cy !
+            0. cy 2!
         then
-        cleos
+        cursor 2* t.ca1
+        t.ca ++
+        aclr2
     endof
     'K' of
         arg 0 max
@@ -178,12 +177,15 @@ variable pa
         2 of 0 t.W           lineclr endof
         endcase
     endof
-
-    's' of cx @ cy @ csave 2! endof
-    'u' of csave 2@ cy ! cx ! endof
+    's' of cy 2@ csave 2! endof
+    'u' of csave 2@ cy 2! endof
 
     cr ." Unhandled >>> " emit 1 throw
     endcase
+;
+
+: down1
+    1 cy +!
 ;
 
 : plain
@@ -212,7 +214,7 @@ variable pa
     1 cx +!
     cx @ t.W = if
         0 cx !
-        1 cy +!
+        down1
     then
     ;
 
@@ -220,7 +222,7 @@ variable pa
     begin
         getc
         case
-        10 of 1 cy +! endof
+        10 of down1 endof
         13 of 0 cx ! endof
         27 of csi endof
         dup plain
