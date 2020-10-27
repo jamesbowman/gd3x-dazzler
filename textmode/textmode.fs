@@ -41,6 +41,8 @@ cy cell+ constant cx
 create argv 10 cells allot
 variable pa
 
+: arg  ( -- a ) pa @ @ 1 cells pa +! ;
+\ Missing args are -1
 : present   0< invert ;
 
 : number ( -- k u )
@@ -66,10 +68,6 @@ variable pa
     \ xxx
     ;
 
-: arg
-    pa @ @
-    1 cells pa +! ;
-
 : cop ( color code )
     swap 8 and + ;
 
@@ -88,8 +86,7 @@ variable pa
 : sgr
     colors 2@
     begin
-        arg
-        dup present
+        arg dup present
     while
         \ cr dup .
         case
