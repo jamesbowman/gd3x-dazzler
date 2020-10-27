@@ -77,7 +77,7 @@ class Textmode:
         wh = w * h
         sz = w * W * h2 * H
 
-        cm = len(colorblk)
+        cm = len(colorblk) + (4 * H)
         fm = cm + 2 * cz
         fb = fm + len(fim.tobytes())
 
@@ -104,6 +104,11 @@ class Textmode:
 
         gd.cmd_memwrite(0, len(colorblk))
         gd.cc(eve.align4(colorblk))
+
+        self.scrollblk = len(colorblk)
+        gd.cmd_memwrite(len(colorblk), 4 * self.H)
+        for i in range(self.H):
+            gd.VertexTranslateY(16 * -self.h2 * i)
 
         gd.cmd_inflate(fm)
         c = eve.align4(zlib.compress(fim.tobytes()))
@@ -148,14 +153,19 @@ class Textmode:
             gd.BitmapTransformA(0x8000 // w2, 1)
             gd.BitmapTransformC(0x10)
             gd.BitmapTransformE(0)
-            for i in range(H - 1):
-                gd.Cell(i)
+            for i in range(2 * H):
+                gd.Cell(i % H)
                 gd.Vertex2f(0, i * h2)
             gd.RestoreContext()
 
+        gd.cmd_memwrite(eve.REG_MACRO_0, 4)
+        gd.VertexTranslateY(16 * 0)
+
+        gd.Macro(0)
         gd.VertexFormat(0)
         gd.ClearColorA(0)
         gd.Clear()
+        gd.ScissorSize(1280, (self.H - 1) * self.h2)
         gd.Begin(eve.BITMAPS)
         gd.ColorMask(1, 1, 1, 0)
         colorpass(1)
@@ -168,8 +178,8 @@ class Textmode:
         gd.BitmapTransformD(0x8000, 1)
         gd.BitmapTransformE(0)
         gd.BitmapHandle(0)
-        for i in range(H - 1):
-            gd.Cell(i)
+        for i in range(2 * H):
+            gd.Cell(i % H)
             gd.Vertex2f(0, i * h2)
         gd.RestoreContext()
 
@@ -180,6 +190,7 @@ class Textmode:
         gd.swap()
 
         self.colors = (7, 0)
+        self.yo = 0
 
     def gaddr(self, x, y):
         return self.fb + x * (self.w2 * self.h) + y * (self.w2 * self.h * self.W)
@@ -201,6 +212,7 @@ class Textmode:
     def dump_fs(self):
         with open("_textmode.fs", "wt") as f:
             f.write("%d constant t.fm\n" % self.fm)
+            f.write("%d constant t.scr\n" % self.scrollblk)
             f.write("%d constant t.ca\n" % self.caddr(0, 0, 0))
             f.write("%d constant t.ca1\n" % (2 * self.W * self.H))
             fb = self.gaddr(0, 0)
@@ -211,9 +223,10 @@ class Textmode:
 
     def clr(self, p0, p1):
         for z in (0,1):
-            a0 = self.caddr(p0[0], p0[1], z)
-            a1 = self.caddr(p1[0], p1[1], z)
-            print('a0,a1', p0, p1, a0, a1)
+            a0 = self.caddr(p0[0], self.y(p0[1]), z)
+            a1 = self.caddr(p1[0], self.y(p1[1]), z)
+            assert a0 <= a1
+            # print('a0,a1', p0, p1, a0, a1)
             self.aclr(a0, a1)
 
     def aclr(self, a0, a1):
@@ -260,6 +273,9 @@ class Textmode:
         gd.cmd_memcpy(BG, 4 + 2 * bg, 2)
         gd.cmd_memcpy(FG, 4 + 2 * fg, 2)
         self.colors = (fg, bg)
+
+    def y(self, y):
+        return (y + self.yo) % self.H
 
     def render(self, getc):
         (cx, cy) = (0, 0)
@@ -317,7 +333,7 @@ class Textmode:
                     c = default(args, 0)
                     if c in (2, 3):
                         (cx, cy) = (0, 0)
-                    self.clr((cx, cy), (0, self.H))
+                    self.clr((cx, cy), (self.W, self.H - 1))
                 elif c == b's':
                     cs.append((cx, cy))
                 elif c == b'u':
@@ -327,28 +343,28 @@ class Textmode:
                 else:
                     print('seq %s: ' % c, args)
             else:
-                # print(cx, cy)
-                self.drawch(cx, cy, c[0])
+                # print(cx, cy, self.yo, chr(c[0]))
+                self.drawch(cx, self.y(cy), c[0])
                 cx += 1
                 if cx == self.W:
                     (cx, cy) = (0, cy + 1)
-            if cy == self.H:
-                lastline = columns * ((self.H - 1) - 1) * 2
-                e.cmd_memcpy(0, 160, lastline)
-                e.cmd_memset(lastline, 0, 2 * columns)
+            if cy == (self.H - 1):
+                self.yo = (self.yo + 1) % self.H
                 cy -= 1
+                # self.clr((0, cy), (self.W, cy))
+                gd.cmd_memwrite(eve.REG_MACRO_0, 4)
+                gd.VertexTranslateY(16 * -self.h2 * self.yo)
 
-        
 if __name__ == "__main__":
     gd = eve.GameduinoSPIDriver(SPIDriver(sys.argv[1]))
     gd.init()
     t = Textmode(gd, 'L')
     if 1:
-        t.cls()
         # t.pattern()
         fn = "ans/786welcc.ans"
-        fn = "256color.ans"
         fn = "intro.ans"
+        fn = "ans/256color.ans"
+        fn = "ans/m.ans"
         with open(fn, "rb") as f:
             def getc():
                 return f.read(1)
