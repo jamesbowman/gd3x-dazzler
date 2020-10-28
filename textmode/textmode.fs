@@ -107,8 +107,11 @@ variable pa
     BG setcolor FG setcolor
     ;
 
+: yoff yo @ + t.H mod ;
 : cursor
-    cy 2@ t.W * + ;
+    cy 2@
+    yoff
+    t.W * + ;
 
 : ++ ( a b u -- a+u b+u )
     tuck + >r + r> ;
@@ -130,7 +133,7 @@ variable pa
 
 :  lineclr ( x0 x1 )
     2* swap 2* swap
-    cy @ t.W * 2* t.ca +
+    cy @ yoff t.W * 2* t.ca +
     ++                  ( a0 a1 )
     aclr2 ;
 
@@ -184,11 +187,13 @@ variable pa
 : down1
     1 cy +!
     cy @ t.H 1- = if
-        \ 1 yo +!
-        \ -1 cy +!
-        \ cmd_memwrite
-        \ $3020d8. >gd
-        \ 4 w>gd
+        yo @ 1+ t.H mod yo !
+        -1 cy +!
+        0 t.W lineclr
+        cmd_memcpy
+        $3020d8. >gd
+        yo @ 4 * t.scr + w>gd
+        4 w>gd
     then
 ;
 

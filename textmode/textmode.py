@@ -351,9 +351,8 @@ class Textmode:
             if cy == (self.H - 1):
                 self.yo = (self.yo + 1) % self.H
                 cy -= 1
-                # self.clr((0, cy), (self.W, cy))
-                gd.cmd_memwrite(eve.REG_MACRO_0, 4)
-                gd.VertexTranslateY(16 * -self.h2 * self.yo)
+                self.clr((0, cy), (self.W, cy))
+                gd.cmd_memcpy(eve.REG_MACRO_0, self.scrollblk + 4 * self.yo, 4)
 
 if __name__ == "__main__":
     gd = eve.GameduinoSPIDriver(SPIDriver(sys.argv[1]))
