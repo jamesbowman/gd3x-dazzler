@@ -249,13 +249,14 @@ class Textmode:
                 fg,bg = (7, 0)
             elif g == 1:
                 fg |= 8
+            elif g == 3:
+                pass
             elif g == 5:
                 bg |= 8
             elif 30 <= g <= 37:
                 fg = (g - 30) | (fg & 8)
             elif g == 39:
                 fg = 7 | (fg & 8)
-                print('fg', fg)
             elif 40 <= g <= 47:
                 bg = (g - 40) | (bg & 8)
             elif g == 49:
@@ -363,7 +364,7 @@ if __name__ == "__main__":
         fn = "ans/786welcc.ans"
         fn = "intro.ans"
         fn = "ans/256color.ans"
-        fn = "ans/m.ans"
+        fn = "ans/csi_k_2.ans"
         with open(fn, "rb") as f:
             def getc():
                 return f.read(1)
