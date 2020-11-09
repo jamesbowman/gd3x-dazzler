@@ -1,0 +1,9 @@
+set -e
+
+D=${HOME}/git/z88dk/
+export PATH=${PATH}:${D}/bin
+export ZCCCFG=${D}/lib/config
+
+zcc +rc2014 -subtype=basic -clib=sdcc_iy -SO3 -v -m --list --c-code-in-asm --max-allocs-per-node100000 --math32 @mytest.lst -o mytest -create-app
+# zcc +rc2014 -subtype=acia -clib=sdcc_iy -SO3 -v -m --list --c-code-in-asm --max-allocs-per-node100000 --math32 -llib/hbios/time -llib/hbios/diskio_hbios -llib/hbios/ff @mytest.lst -o mytest -create-app
+python scmload.py $HOME/rc2014 mytest.ihx
