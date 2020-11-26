@@ -1,4 +1,4 @@
-#include nuc.fs
+#include daznuc.fs
 
 : dvg?
     cr ." DUMP"

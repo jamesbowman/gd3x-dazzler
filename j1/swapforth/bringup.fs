@@ -1,4 +1,4 @@
-#include nuc.fs
+#include daznuc.fs
 
 #include icap.fs
 #include wii.fs
@@ -422,14 +422,45 @@ include fs.fs
 
 \ ------------------------------------------------------------
 
-: slot1
-    $100000. flashoff 2!
+: slot ( u - d )  $10 * 0 swap ;
+
+: load ( d )    \ Load a slot from serial binary stream
+    flashoff 2!
     eve-diag
     loadbin
-    $100000. iprog
 ;
 
-\ #include asteroids.fs
+: run ( d )     \ Boot from a slot
+    iprog ;
+
+: reboot        \ Boot from slot 0
+    0 slot run ;
+
+: origin ( - d )    \ Which slot we boot from?
+    $14 icap@ 4 rshift 1 and ;
+
+\ A valid slot starts with 22 DA 1E 55, then has a 32-byte 0-terminated string
+: slotvalid
+    slot read
+    spiw> $22DA =
+    spiw> $551E =
+    and ;
+
+: slot?
+    slotvalid
+    0= if ." [unused]" exit then
+    begin
+        spi> ?dup
+    while
+        emit
+    repeat ;
+
+: slots
+    0 mux0 DSPI
+    8 0 do
+        cr i . i slot?
+    loop cr ;
+\ ------------------------------------------------------------
 
 : hi ( p ) 3 swap $400 + io! ;
 : lo ( p ) 2 swap $400 + io! ;

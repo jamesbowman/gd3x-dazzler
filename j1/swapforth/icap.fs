@@ -60,8 +60,6 @@
     $30a1 >icap $000e >icap
     post ;
 
-: reboot 0. iprog ;
-
 : micap@ ( a u -- n... )
     sync
     $2000 >icap     \ NOOP

@@ -126,9 +126,8 @@ marker |
 ( 0:JUMP    ) :noname [char] J emit space .xt ;
 create _ , , , ,
 
-: see
-    '
-    48 bounds
+: dis ( a u )
+    bounds
     begin
         cr dup .x
         dup @
@@ -146,6 +145,8 @@ create _ , , , ,
     until
     2drop
 ;
+
+: see ' 48 dis ;
 
 : dump
     ?dup

@@ -86,6 +86,7 @@ defer restart
     det dup
     0= if
         i2cw do
+            ." ---- "
             0 i io!
         loop
     then ;
@@ -104,6 +105,7 @@ defer restart
         i2cw do
             0 i2c-rx 
             0 i2c-rx >< +
+            dup .x
             i io!
         loop
         1 i2c-rx drop
@@ -116,6 +118,7 @@ defer restart
 : wii-main
     ['] /wii both
     begin
+        cr
         ['] sense both
     again ;
 
@@ -128,15 +131,3 @@ defer restart
         2 io@ .x
         3 io@ .x
     again ;
-
-: frob
-    0
-    begin
-        cr .s
-        dup $5 and
-        dup false pl ! i2c!
-        true pl ! i2c!
-        2000 ms
-        invert
-    again
-    ;

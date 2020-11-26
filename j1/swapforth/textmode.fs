@@ -1,4 +1,4 @@
-#include nuc.fs
+#include daznuc.fs
 
 : e.cmd ( u ) $ff00 or true >spid ;
 
