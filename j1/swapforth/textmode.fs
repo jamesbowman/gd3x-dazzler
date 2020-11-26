@@ -1,25 +1,30 @@
 : e.cmd ( u ) $ff00 or true >spid ;
 
-: x
-    begin
-        $19 io@ if
-            cr $1a io@ .x2
-        then
-    again ;
-
 #include _textmode.fs
 
 2variable cursor
 0. cursor 2!
 cursor cell+ constant cursorx
+variable yo
+
+variable fg $ffff fg !
+variable bg $1082 0 and bg !
+
+: Hmod ( u )
+    dup H < invert H and - ;
+
+: yoff ( y - y' )
+    yo @ + Hmod ;
 
 : gaddr ( x y )
+    yoff
     >r
     gx um*
     r> gy * 0 d+
     fb d+ ;
 
 : caddr ( x y )
+    yoff
     2* swap
     cx * + 0
     ;
@@ -36,15 +41,44 @@ cursor cell+ constant cursorx
 : e.memwrite    $1a e.cmd ;
 : e.memcpy      $1d e.cmd ;
 
+: setscroll
+    >r
+    e.memwrite
+    REG_MACRO_0 >spid
+    4. >spid
+    H r> - h2 * y_bar +
+    16 um*
+    \ 2dup d.
+    $ff and $2c00 or
+    \ dup .x over .x
+    >spid
+    ;
+
+: scroll
+    \ W 0 do
+    \     i H 1- caddr eve!
+    \     bg @ >spiw
+    \ loop
+    0 H 1- caddr
+    W 0 do
+        2dup eve! bg @ >spiw
+        cx m+
+    loop 2drop
+    stream
+    
+    yo @ 1+ Hmod dup yo !
+    setscroll
+    ;
+
 : t.home    0. cursor 2! ;
 : t.cr 0 cursorx ! ;
 : t.lf
     cursor @ 1+
-    dup H <> if
+    dup H 1- <> if
         cursor ! exit
     then
     drop
-    ."  scroll"
+    scroll
     ;
 
 : right1
@@ -53,9 +87,6 @@ cursor cell+ constant cursorx
         exit
     then
     t.cr t.lf ;
-
-variable fg $ffff fg !
-variable bg $1082 bg !
 
 : drawch ( c )
     e.memcpy
@@ -72,13 +103,15 @@ variable bg $1082 bg !
     right1
     ;
 
-:  cls
+: cls
     e.memzero
     fb >spid
     sz >spid
     e.memzero
     cm >spid
     cz 2 um* >spid
+    0 yo !
+    0 setscroll
     t.home
     finish stream
     ;
@@ -88,19 +121,6 @@ variable bg $1082 bg !
     0 r> cursor 2!
     W 0 do bl drawch loop
     cursor 2!
-    ;
-
-: setscroll
-    >r
-    e.memwrite
-    REG_MACRO_0 >spid
-    4. >spid
-    H r> - h2 * y_bar +
-    16 um*
-    2dup d.
-    $ff and $2c00 or
-    dup .x over .x
-    >spid
     ;
 
 : bar
@@ -121,17 +141,18 @@ variable bg $1082 bg !
     [ cursor cell+ ] literal ! ;
 
 : wave
-    cls
-    H 0 do
-        i 2000 * isin 50 m* nip 36 + t.x
-        i 1 and if
+    0
+    begin
+        dup 2000 * isin 50 m* nip 36 + t.x
+        dup 1359 * fg !
+        dup 1 and if
             s" GAMEDUINO"
         else
             s"  DAZZLER "
         then
-        i 1359 * fg !
         t.type t.cr t.lf
-    loop
+        1+ 40 ms
+    again
     ;
 
 : bench
@@ -140,6 +161,28 @@ variable bg $1082 bg !
         1000 0 do
             'x' drawch
         loop
+    loop
+    ;
+
+: t.emit
+    case
+    $0a of t.lf endof
+    $0d of t.cr endof
+    drawch
+    endcase ;
+
+: x
+    CSPI /qpi/
+    cls
+    \ begin
+    \     $19 io@ if
+    \         $1a io@ dup emit t.emit
+    \     then
+    \ again
+
+    999 0 do
+        i s>d <# #s #> t.type t.cr t.lf
+        i 60 > 60 and ms
     loop
     ;
 
