@@ -1,3 +1,5 @@
+#include nuc.fs
+
 : e.cmd ( u ) $ff00 or true >spid ;
 
 : x
