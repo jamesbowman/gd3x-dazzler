@@ -25,5 +25,6 @@ clean:
 	rm -rf build
 	rm -rf obj_dir
 	rm -f newmem.dat
+	rm -rf verilator_version.h
 
 .PHONY: all

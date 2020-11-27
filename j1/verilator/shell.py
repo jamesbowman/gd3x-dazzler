@@ -79,6 +79,8 @@ class TetheredJ1a(swapforth.TetheredTarget):
     def extra_command(self, c):
         if c == 'oneframe':
             oneframe(self.ser)
+        if c == 'clocks':
+            print(self.ser.clocks())
 
 if __name__ == '__main__':
     swapforth.main(TetheredJ1a)

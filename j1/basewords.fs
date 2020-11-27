@@ -29,6 +29,7 @@
 : N->[T]    h# 0030 or ;
 : N->io[T]  h# 0040 or ;
 : _IORD_    h# 0050 or ;
+: N->c[T]   h# 0060 or ;
 : RET       h# 0080 or ;
 
 : d-1       h# 0003 or ;
@@ -66,6 +67,9 @@
              io[T]                   alu ;
 :: !         
              T     N->[T]        d-1 alu
+             N                   d-1 alu ;
+:: c!         
+             T     N->c[T]       d-1 alu
              N                   d-1 alu ;
 :: io!       
              T     N->io[T]      d-1 alu

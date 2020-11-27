@@ -8,7 +8,8 @@ module j1(
   output wire io_rd,
   output wire io_wr,
   output wire [15:0] mem_addr,
-  output wire mem_wr,
+  output wire mem_wr16,
+  output wire mem_wr8,
   output wire [`WIDTH-1:0] dout,
 
   output wire [15:0] mem_raddr,
@@ -107,9 +108,11 @@ module j1(
   wire func_write = (insn[6:4] == 3);
   wire func_iow =   (insn[6:4] == 4);
   wire func_ior =   (insn[6:4] == 5);
+  wire func_wr_8 =  (insn[6:4] == 6);
 
   wire is_alu = !pc[12] & (insn[15:13] == 3'b011);
-  assign mem_wr = !reboot & is_alu & func_write;
+  assign mem_wr16 = !reboot & is_alu & func_write;
+  assign mem_wr8 = !reboot & is_alu & func_wr_8;
   assign dout = st1;
   assign io_wr = !reboot & is_alu & func_iow;
   assign io_rd = !reboot & is_alu & func_ior;

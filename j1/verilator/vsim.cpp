@@ -37,6 +37,7 @@ typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
     Vj1a* dut;
+    uint64_t clocks;
     unsigned int ddepth[4096], rdepth[4096];
 #if VCD
     VerilatedVcdC* tfp;
@@ -71,6 +72,7 @@ Vj1a_init(v3 *self, PyObject *args, PyObject *kwds)
   }
   memset(self->rdepth, 0, sizeof(self->rdepth));
   memset(self->ddepth, 0, sizeof(self->ddepth));
+  self->clocks = 0;
 
   return 0;
 }
@@ -155,6 +157,7 @@ static void cycle(v3* v)
     v->ddepth[pc] = dut->SIG(__DOT___j1__DOT__dstack__DOT__depth);
   if (dut->SIG(__DOT___j1__DOT__rstack__DOT__depth) > v->rdepth[pc])
     v->rdepth[pc] = dut->SIG(__DOT___j1__DOT__rstack__DOT__depth);
+  v->clocks++;
 }
 
 PyObject *v3_cycle(PyObject *_, PyObject *args)
@@ -162,6 +165,12 @@ PyObject *v3_cycle(PyObject *_, PyObject *args)
   v3 *self = (v3*)_;
   cycle(self);
   Py_RETURN_NONE;
+}
+
+PyObject *v3_clocks(PyObject *_, PyObject *args)
+{
+  v3 *self = (v3*)_;
+  return PyLong_FromLong(self->clocks);
 }
 
 PyObject *v3_read(PyObject *_, PyObject *args)
@@ -226,6 +235,7 @@ static PyMethodDef Vj1a_methods[] = {
     {"mockeve", v3_mockeve, METH_VARARGS},
     {"hdmi", v3_hdmi, METH_NOARGS},
     {"cycle", v3_cycle, METH_NOARGS},
+    {"clocks", v3_clocks, METH_NOARGS},
     {NULL}  /* Sentinel */
 };
 
