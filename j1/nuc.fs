@@ -1127,3 +1127,21 @@ meta
     link @ t' forth tw!
     there  t' dp tw!
 target
+
+meta
+tdp @ $3fc0 org
+$947 tw,
+target
+: bootspan ( a u )
+    begin
+        h# 0 h# 112 io!
+        begin h# 113 io@ until
+        h# 112 io@ d# 8 flip
+        over !
+        d# 2 +
+        2dup=
+    until
+meta
+$947 tw,
+org
+target

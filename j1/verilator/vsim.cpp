@@ -61,7 +61,7 @@ Vj1a_init(v3 *self, PyObject *args, PyObject *kwds)
   self->dut = new Vj1a;
   FILE *hex = fopen("../build/nuc.hex", "r");
   int i;
-  for (i = 0; i < 4096; i++) {
+  for (i = 0; i < 8192; i++) {
     unsigned int v;
     if (fscanf(hex, "%x\n", &v) != 1) {
       fprintf(stderr, "invalid hex value at line %d\n", i + 1);

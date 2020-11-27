@@ -67,7 +67,7 @@ class TetheredJ1a(swapforth.TetheredTarget):
         self.reset()
 
     def serialize(self):
-        l = self.command_response('0 here dump')
+        l = self.command_response('0 16384 dump')
         lines = l.strip().replace('\r', '').split('\n')
         s = []
         for l in lines:
