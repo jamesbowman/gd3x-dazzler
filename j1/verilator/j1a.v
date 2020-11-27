@@ -15,7 +15,7 @@ module j1a(input wire clk,
 );
   wire io_rd, io_wr;
   wire [15:0] mem_addr;
-  wire mem_wr;
+  wire mem_wr16, mem_wr8;
   wire [15:0] dout;
   wire [15:0] io_din;
   /* verilator lint_off UNUSED */
@@ -30,8 +30,13 @@ module j1a(input wire clk,
     // $display("pc=%x", code_addr * 2);
     insn <= ram_prog[code_addr[12:0]];
     din <= ram_prog[mem_raddr[13:1]];
-    if (mem_wr)
+    if (mem_wr16)
       ram_prog[mem_addr[13:1]] <= dout;
+    if (mem_wr8)
+      if (mem_addr[0] == 1'b0)
+        ram_prog[mem_addr[13:1]][7:0] <= dout[7:0];
+      else
+        ram_prog[mem_addr[13:1]][15:8] <= dout[7:0];
   end
 
   j1 _j1(
@@ -39,7 +44,8 @@ module j1a(input wire clk,
     .resetq(resetq),
     .io_rd(io_rd),
     .io_wr(io_wr),
-    .mem_wr(mem_wr),
+    .mem_wr16(mem_wr16),
+    .mem_wr8(mem_wr8),
     .dout(dout),
     .io_din(io_din),
     .mem_addr(mem_addr),

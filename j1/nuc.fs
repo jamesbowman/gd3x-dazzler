@@ -36,6 +36,7 @@ header u>       : u>        swap u< ;
 header !        : _!        ! ;
 header io!      : _io!      io! ;
 header ><       : ><        d# 8 flip ;
+header c!       : _c!       c! ;
 
 : off   ( a -- ) \ store 0 to a
     d# 0 swap
@@ -130,19 +131,6 @@ header 2over    : 2over >r >r 2dup r> r> 2swap ;
 header min      : min   2dup<
 : minmax                if drop else nip then ;
 header max      : max   2dup< invert minmax ;
-
-header c!
-: c! ( u c-addr -- )
-    dup>r d# 1 and if
-        d# 8 lshift
-        h# 00ff
-    else
-        h# 00ff and
-        h# ff00
-    then
-    r@ @ and
-    or r> _!
-;
 
 header count
 : count
