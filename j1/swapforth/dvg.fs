@@ -1,5 +1,16 @@
+variable space 0 space !
+: >gd
+    space @ 0= if
+        begin cmdspace $500 > until
+        $100 space !
+        stream
+    then
+    >spid
+    -1 space +!
+    ;
+
 : lines
-    $0004 $1f00 >spid ;
+    $0004 $1f00 >gd ;
 
 900 constant WIDTH
 
@@ -48,7 +59,7 @@ variable (bright)
         drop exit
     then
     dup (bright) !
-    16 * $1000 >spid
+    16 * $1000 >gd
     ;
 
 \ from native 0-1023 to EVE coordinate
@@ -64,7 +75,7 @@ variable (bright)
     y @ screen negate $7fff and
     x @ screen tuck 15 lshift or
     swap $7fff and 2/ $4000 or
-    >spid
+    >gd
     ;
 
 : draw ( x y )
@@ -97,13 +108,13 @@ variable (bright)
     plot ;
 
 : dvg-preamble
-    $ff00 $ffff >spid     \ cmd_dlstart
-    $1010 $0210 >spid     \ ClearColor
-    $0007 $2600 >spid     \ Clear
-    $0003 $2700 >spid     \ VertexFormat(0)
-    $0011 $0b00 >spid     \ gd.BlendFunc(eve.SRC_ALPHA, 1)
-    $2800 $2b00 >spid     \ screen center
-    $1680 $2c00 >spid
+    $ff00 $ffff >gd     \ cmd_dlstart
+    $1010 $0210 >gd     \ ClearColor
+    $0007 $2600 >gd     \ Clear
+    $0003 $2700 >gd     \ VertexFormat(0)
+    $0011 $0b00 >gd     \ gd.BlendFunc(eve.SRC_ALPHA, 1)
+    $2800 $2b00 >gd     \ screen center
+    $1680 $2c00 >gd
     lines
     ;
 
@@ -128,8 +139,8 @@ variable (bright)
 : render
     -1 (bright) !
     dvg
-    0 0 >spid
-    $ff01 $ffff >spid
+    0 0 >gd
+    $ff01 $ffff >gd
     ;
 
 \ ------------------------------------------------------------

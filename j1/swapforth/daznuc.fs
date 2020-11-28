@@ -1,5 +1,6 @@
 new
 decimal
+' quit init !
 
 #include dna.fs
 #include ../build/stamp.fs
@@ -91,6 +92,7 @@ $2088 reg REG_SOUND
 $208c reg REG_PLAY
 $20d8 reg REG_MACRO_0
 $20fc reg REG_CMD_WRITE
+$2100 reg REG_CMD_DL
 $2180 reg REG_TRIM
 $2188 reg REG_SPI_WIDTH
 $2574 reg REG_CMDB_SPACE

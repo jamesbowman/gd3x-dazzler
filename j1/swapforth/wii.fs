@@ -81,16 +81,16 @@ defer restart
         cr i .x .
     loop ;
 
-create wiisense 6 cells allot
+create wiistate 6 cells allot
 
 : wiiw ( v i )    \ i is 0-5
-    cells wiisense + ! ;
+    cells wiistate + ! ;
 : wiir
     pl @ 6 and
-    wiisense + 6
+    wiistate + 6
     ;
 : wii-commit
-    wiisense
+    wiistate
 cr
     10 4 do
         dup @
@@ -114,7 +114,7 @@ dup .x
         \ wii-idcode
     then ;
 
-: sense
+: wii-sense
     present if
         $00 wii@
         wiir bounds do
@@ -132,8 +132,22 @@ dup .x
 : wii-main
     ['] /wii both
     begin
-        ['] sense both
+        ['] wii-sense both
         wii-commit
     again ;
+
+variable wiiF 0 wiiF !
+
+: wii-poll
+    ['] chars is restart
+    present dup if
+        wiiF @ 0= if
+            cr ." insertion"
+            /wii
+        then
+        wii-sense
+    then
+    wiiF !
+    ;
 
 ' wii-main is restart
