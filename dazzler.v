@@ -130,7 +130,7 @@ module bram_tdp #(
 // Shared memory
 reg [DATA-1:0] mem [(2**ADDR)-1:0];
   initial begin
-    $readmemh("j1/build/asteroids.hex", mem);
+    $readmemh("j1/build/bringup.hex", mem);
   end
  
 // Port A
@@ -798,11 +798,13 @@ module top(
 `endif
   wire dvg_go;
 
+  reg [15:0] asteroids_switches;
+
   asteroids _asteroids (
     .fastclk(cpuclk),
     .reset(m6502_reset),
     .run(m6502_run),
-    .sw1start(1'b0),
+    .in1in0(asteroids_switches),
     .GODVG(dvg_go),
     .dvgclk(cpuclk),
     .dvga(dvga),
@@ -944,6 +946,10 @@ module top(
       gpio_o[io_a[4:0]] <= io_wd[0];
     end
 `endif
+
+    if (io_w & (io_a[11:0] == 12'h500))
+      asteroids_switches <= io_wd;
+
   end
 
   wire [47:0] WII1e, WII2e;

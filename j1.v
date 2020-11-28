@@ -110,7 +110,7 @@ module j1(
   wire func_ior =   (insn[6:4] == 5);
   wire func_wr_8 =  (insn[6:4] == 6);
 
-  wire is_alu = !pc[12] & (insn[15:13] == 3'b011);
+  wire is_alu = (insn[15:13] == 3'b011);
   assign mem_wr16 = !reboot & is_alu & func_write;
   assign mem_wr8 = !reboot & is_alu & func_wr_8;
   assign dout = st1;
