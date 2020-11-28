@@ -9,7 +9,6 @@
 variable pl false pl !  \ player select, 
 
 : i2cr ( 2 or 3 ) 2 pl @ - ;
-: i2cw ( 7 4 or 10 7 ) pl @ 3 and 7 + dup 3 - ;
 
 : i2c!  i2cr io! ;
 : i2c@  i2cr io@ ;
@@ -82,13 +81,29 @@ defer restart
         cr i .x .
     loop ;
 
+create wiisense 6 cells allot
+
+: wiiw ( v i )    \ i is 0-5
+    cells wiisense + ! ;
+: wiir
+    pl @ 6 and
+    wiisense + 6
+    ;
+: wii-commit
+    wiisense
+cr
+    10 4 do
+        dup @
+dup .x
+        i io!
+        cell+
+    loop
+    drop ;
+
 : present ( - f  true if present )
     det dup
     0= if
-        i2cw do
-            ." ---- "
-            0 i io!
-        loop
+        wiir erase
     then ;
 
 : /wii
@@ -102,12 +117,11 @@ defer restart
 : sense
     present if
         $00 wii@
-        i2cw do
+        wiir bounds do
             0 i2c-rx 
             0 i2c-rx >< +
-            dup .x
-            i io!
-        loop
+            i !
+        2 +loop
         1 i2c-rx drop
         i2c-stop
     then
@@ -118,16 +132,8 @@ defer restart
 : wii-main
     ['] /wii both
     begin
-        cr
         ['] sense both
+        wii-commit
     again ;
 
 ' wii-main is restart
-\ ' quit is restart
-
-: wii?
-    begin
-        cr
-        2 io@ .x
-        3 io@ .x
-    again ;

@@ -146,7 +146,7 @@ class TetheredTarget:
                 if self.verbose:
                     print(repr(l))
                 if l == "#bye":
-                    raise Bye
+                    sys.exit(0)
                 l = l.expandtabs(4)
                 rs = l.split()
                 if rs and rs[0] == 'include':

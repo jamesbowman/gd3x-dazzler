@@ -431,11 +431,16 @@ include fs.fs
     loadbin
 ;
 
-: run ( d )     \ Boot from a slot
-    iprog ;
-
-: reboot        \ Boot from slot 0
-    0 slot run ;
+\ : run ( d )     \ Boot from a slot
+\     0 mux0 DSPI
+\     2dup $24 m+ read
+\     spiw> $615a = if
+\         $0 $3f80 bounds chain
+\     then
+\     iprog ;
+\ 
+\ : reboot        \ Boot from slot 0
+\     0 slot run ;
 
 : origin ( - d )    \ Which slot we boot from?
     $14 icap@ 4 rshift 1 and ;
@@ -449,7 +454,7 @@ include fs.fs
 
 : slot?
     slotvalid
-    0= if ." [unused]" exit then
+    0= if '-' emit exit then
     begin
         spi> ?dup
     while
