@@ -2,7 +2,7 @@ build/nuc.hex: cross.fs basewords.fs nuc.fs
 	mkdir -p build
 	gforth cross.fs basewords.fs nuc.fs
 
-build/dazzler.hex: build/nuc.hex verilator/bootstrap swapforth.fs swapforth/*.fs build/stamp.fs
+build/bringup.hex: build/nuc.hex verilator/bootstrap swapforth.fs swapforth/*.fs build/stamp.fs
 	make -C verilator
 	(cd ./verilator/; ./bootstrap)
 

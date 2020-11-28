@@ -23,9 +23,11 @@
 
 #include dvg.fs
 
-: x
+: asteroids
     0 mux0
     CSPI
+    eve-start 0 playstream finish 50 ms
+
     0
     begin
         stream dvg-preamble
@@ -39,6 +41,17 @@
         REG_FRAMES eve@ tuck - -1 <> if cr ." dropped" .s then
     again
     ;
+
+: cold
+    cr ." Asteroids"
+    200 ms key? if
+        quit
+    else
+        \ poweron wii-main
+        asteroids
+        quit
+    then ;
+' cold init !
 
 : s
         stream dvg-preamble

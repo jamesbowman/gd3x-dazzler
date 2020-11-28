@@ -1,5 +1,7 @@
 `default_nettype none
 
+`define CONFIG_SPI
+
 module HDMI_encoder_2(
   input  wire pclk,
   input  wire [29:0] d,
@@ -112,7 +114,7 @@ module bram_tdp #(
 ) (
     // Port A
     input    wire                a_clk,
-    input    wire                a_wr,
+    input    wire         [1:0]  a_wr,
     input    wire    [ADDR-1:0]  a_addr,
     input    wire    [DATA-1:0]  a_din,
     output  reg     [DATA-1:0]  a_dout,
@@ -128,15 +130,19 @@ module bram_tdp #(
 // Shared memory
 reg [DATA-1:0] mem [(2**ADDR)-1:0];
   initial begin
-    $readmemh("j1/build/dazzler.hex", mem);
+    $readmemh("j1/build/asteroids.hex", mem);
   end
  
 // Port A
 always @(posedge a_clk) begin
     a_dout      <= mem[a_addr];
-    if(a_wr) begin
-        a_dout      <= a_din;
-        mem[a_addr] <= a_din;
+    if(a_wr[0]) begin
+        a_dout[7:0]      <= a_din[7:0];
+        mem[a_addr][7:0] <= a_din[7:0];
+    end
+    if(a_wr[1]) begin
+        a_dout[15:8]      <= a_din[15:8];
+        mem[a_addr][15:8] <= a_din[15:8];
     end
 end
  
@@ -163,7 +169,7 @@ module cpu(
   output reg  io_w);
 
   wire [15:0] mem_addr, mem_raddr;
-  wire mem_wr;
+  wire mem_wr16, mem_wr8;
   wire [15:0] dout, din;
 
   wire [12:0] code_addr;
@@ -174,9 +180,10 @@ module cpu(
 
   bram_tdp #(.DATA(16), .ADDR(13)) nram (
     .a_clk(clk),
-    .a_wr(mem_wr),
-    .a_addr(mem_wr ? mem_addr[13:1] : mem_raddr[13:1]),
-    .a_din(dout),
+    .a_wr({mem_wr16 | (mem_wr8 & mem_addr[0]),
+           mem_wr16 | (mem_wr8 & ~mem_addr[0])}),
+    .a_addr((mem_wr16 | mem_wr8) ? mem_addr[13:1] : mem_raddr[13:1]),
+    .a_din(mem_wr16 ? dout : {dout[7:0], dout[7:0]}),
     .a_dout(din),
 
     .b_clk(clk),
@@ -190,7 +197,8 @@ module cpu(
     .resetq(resetq),
     .io_rd(io_rN),
     .io_wr(io_wN),
-    .mem_wr(mem_wr),
+    .mem_wr16(mem_wr16),
+    .mem_wr8(mem_wr8),
     .dout(dout),
     .din(din),
     .io_din(io_rd),
@@ -243,6 +251,16 @@ module wiidecoder(
     2'b00, ly,
     2'b00, lx
   };
+endmodule
+
+module gpio(
+  inout wire p,
+  input wire d,
+  input wire o,
+  output wire i);
+
+  assign p = d ? o : 1'bz;
+  assign i = p;
 endmodule
 
 module SPIengine(
@@ -322,35 +340,37 @@ module top(
 
   input  wire P1,
   output wire P2,
-  output wire P3,
-  input  wire P4,
-  input  wire P5,
-  input  wire P6,
+
+  inout  wire P3,
+  inout  wire P4,
+  inout  wire P5,
+  inout  wire P6,
   inout  wire P7,
 
   inout  wire P8,
-  input  wire P9,
+  inout  wire P9,
   inout  wire P10,
   inout  wire P11,
-  input  wire P12,
+  inout  wire P12,
   inout  wire P13,
-  input  wire P14,
+  inout  wire P14,
 
-  input  wire P15,
-  input  wire P16,
-  input  wire P17,
-  output wire P18,
-  output wire P19,
-  output wire P20,
-  input  wire P21,
+  inout  wire P15,
+  inout  wire P16,
+  inout  wire P17,
+  inout  wire P18,
+  inout  wire P19,
+  inout  wire P20,
+  inout  wire P21,
   inout  wire P22,
-  input  wire P23,
-  input  wire P24,
-  input  wire P25,
-  input  wire P26,
-  input  wire P27,
-  input  wire P28,
-  input  wire P29,
+
+  inout  wire P23,
+  inout  wire P24,
+  inout  wire P25,
+  inout  wire P26,
+  inout  wire P27,
+  inout  wire P28,
+  inout  wire P29,
 
   // output wire SD_2,
   // output wire SD_3,
@@ -368,6 +388,15 @@ module top(
   input wire AUDIO
 
   );
+
+  wire CFG_P8;
+  wire CFG_P10;
+  wire CFG_P11;
+  wire CFG_P13;
+  wire CFG_P18;
+  wire CFG_P19;
+  wire CFG_P20;
+  wire CFG_P22;
 
 `ifdef DESIGN_1_1_0
 
@@ -398,11 +427,6 @@ module top(
 
   BUFG eveclkbufg (.I(PCLK), .O(eveclk));
   wire fclk = eveclk;
-
-  reg [10:0] eveclkdiv;
-  always @(posedge eveclk)
-    eveclkdiv <= eveclkdiv + 3'd1;
-  assign P3 = eveclkdiv[10];
 
   wire pclk;
   wire pllclk0, pllclk1, pllclk2;
@@ -493,44 +517,90 @@ module top(
 
   wire [5:0] HSPI;
 
+`ifdef CONFIG_SPI
+  assign P8 = CFG_P8;
+  assign P10 = CFG_P10;
+  assign P11 = CFG_P11;
+  assign P13 = CFG_P13;
+  assign P18 = CFG_P18;
+  assign P19 = CFG_P19;
+  assign P20 = CFG_P20;
+  assign P22 = CFG_P22;
+`endif
+
+`ifdef CONFIG_GPIO
+  // reg [15:0] gpio0, gpio1;
+  // assign {P15, P14, P13, P12, P11, P10, P9, P8, P7, P6, P5, P4, P3} = gpio0[15:3];
+  // assign {P29, P28, P27, P26, P25, P24, P23, P22, P21, P20, P19, P18, P17, P16} = gpio1[13:0];
+  wire [31:0] gpio_i;
+  reg [31:0] gpio_d, gpio_o;
+
+  gpio gpio_3(.p(P3), .d(gpio_d[3]), .o(gpio_o[3]), .i(gpio_i[3]));
+  gpio gpio_4(.p(P4), .d(gpio_d[4]), .o(gpio_o[4]), .i(gpio_i[4]));
+  gpio gpio_5(.p(P5), .d(gpio_d[5]), .o(gpio_o[5]), .i(gpio_i[5]));
+  gpio gpio_6(.p(P6), .d(gpio_d[6]), .o(gpio_o[6]), .i(gpio_i[6]));
+  gpio gpio_7(.p(P7), .d(gpio_d[7]), .o(gpio_o[7]), .i(gpio_i[7]));
+  gpio gpio_8(.p(P8), .d(gpio_d[8]), .o(gpio_o[8]), .i(gpio_i[8]));
+  gpio gpio_9(.p(P9), .d(gpio_d[9]), .o(gpio_o[9]), .i(gpio_i[9]));
+  gpio gpio_10(.p(P10), .d(gpio_d[10]), .o(gpio_o[10]), .i(gpio_i[10]));
+  gpio gpio_11(.p(P11), .d(gpio_d[11]), .o(gpio_o[11]), .i(gpio_i[11]));
+  gpio gpio_12(.p(P12), .d(gpio_d[12]), .o(gpio_o[12]), .i(gpio_i[12]));
+  gpio gpio_13(.p(P13), .d(gpio_d[13]), .o(gpio_o[13]), .i(gpio_i[13]));
+  gpio gpio_14(.p(P14), .d(gpio_d[14]), .o(gpio_o[14]), .i(gpio_i[14]));
+  gpio gpio_15(.p(P15), .d(gpio_d[15]), .o(gpio_o[15]), .i(gpio_i[15]));
+  gpio gpio_16(.p(P16), .d(gpio_d[16]), .o(gpio_o[16]), .i(gpio_i[16]));
+  gpio gpio_17(.p(P17), .d(gpio_d[17]), .o(gpio_o[17]), .i(gpio_i[17]));
+  gpio gpio_18(.p(P18), .d(gpio_d[18]), .o(gpio_o[18]), .i(gpio_i[18]));
+  gpio gpio_19(.p(P19), .d(gpio_d[19]), .o(gpio_o[19]), .i(gpio_i[19]));
+  gpio gpio_20(.p(P20), .d(gpio_d[20]), .o(gpio_o[20]), .i(gpio_i[20]));
+  gpio gpio_21(.p(P21), .d(gpio_d[21]), .o(gpio_o[21]), .i(gpio_i[21]));
+  gpio gpio_22(.p(P22), .d(gpio_d[22]), .o(gpio_o[22]), .i(gpio_i[22]));
+  gpio gpio_23(.p(P23), .d(gpio_d[23]), .o(gpio_o[23]), .i(gpio_i[23]));
+  gpio gpio_24(.p(P24), .d(gpio_d[24]), .o(gpio_o[24]), .i(gpio_i[24]));
+  gpio gpio_25(.p(P25), .d(gpio_d[25]), .o(gpio_o[25]), .i(gpio_i[25]));
+  gpio gpio_26(.p(P26), .d(gpio_d[26]), .o(gpio_o[26]), .i(gpio_i[26]));
+  gpio gpio_27(.p(P27), .d(gpio_d[27]), .o(gpio_o[27]), .i(gpio_i[27]));
+  gpio gpio_28(.p(P28), .d(gpio_d[28]), .o(gpio_o[28]), .i(gpio_i[28]));
+  gpio gpio_29(.p(P29), .d(gpio_d[29]), .o(gpio_o[29]), .i(gpio_i[29]));
+`endif
+
   wire [15:0] debug0 = {
     P15,
-    P16,
     P14,
-    P13,  // P1 SDA
-    P12,  // P1 DET
-    P11,  // P1 SCL
-    P10,  // P2 SDA
-    P9,   // P2 DET
-    P8,   // P2 SCL
+    P13,
+    P12,
+    P11,
+    P10,
+    P9,
+    P8,
     P7,
     P6,
     P5,
 
     P4,
     P3,
-    P2,
-    P1};
+    3'b000
+    };
   wire [15:0] debug1 = {
-    1'b0,
     1'b0,
     AUDIO,
     P29,
-
     P28,
+
     P27,
     P26,
     P25,
-
     P24,
+
     P23,
     P22,
     P21,
-
     P20,
+
     P19,
     P18,
-    P17
+    P17,
+    P16
     };
 
   wire bufpll_lock;
@@ -635,10 +705,10 @@ module top(
 
   wire [5:0] i2c_i = {P8, P9, P10, P11, P12, P13};
   reg [5:0] i2c_o = 6'b111111;
-  assign P8   = i2c_o[5] ? 1'bz : 1'b0;
-  assign P10  = i2c_o[3] ? 1'bz : 1'b0;
-  assign P11  = i2c_o[2] ? 1'bz : 1'b0;
-  assign P13  = i2c_o[0] ? 1'bz : 1'b0;
+  assign CFG_P8   = i2c_o[5] ? 1'bz : 1'b0;
+  assign CFG_P10  = i2c_o[3] ? 1'bz : 1'b0;
+  assign CFG_P11  = i2c_o[2] ? 1'bz : 1'b0;
+  assign CFG_P13  = i2c_o[0] ? 1'bz : 1'b0;
 
   wire [15:0] cspie_rx;
   wire cspie_idle;
@@ -868,6 +938,12 @@ module top(
     if (io_w & (io_a[11:0] == 12'h301))
       {m6502_run, m6502_reset} <= io_wd[1:0];
 
+`ifdef CONFIG_GPIO
+    if (io_w & (io_a[11:5] == {4'h4, 3'b000})) begin
+      gpio_d[io_a[4:0]] <= io_wd[1];
+      gpio_o[io_a[4:0]] <= io_wd[0];
+    end
+`endif
   end
 
   wire [47:0] WII1e, WII2e;
@@ -1123,9 +1199,9 @@ module top(
   wire [3:0] ESPI_mask;
   assign ESPI_MISO = P17;
 
-  assign P20 = MUX0[2] ? P26     : (ESPI0[5] | ESPIe[5]);   // CS
-  assign P18 = MUX0[2] ? HSPI[4] : (ESPI0[4] | ESPIe[4]);   // SCK
-  assign P19 = MUX0[2] ? HSPI[0] : (ESPI0[0] | ESPIe[0]);   // MOSI
+  assign CFG_P20 = MUX0[2] ? P26     : (ESPI0[5] | ESPIe[5]);   // CS
+  assign CFG_P18 = MUX0[2] ? HSPI[4] : (ESPI0[4] | ESPIe[4]);   // SCK
+  assign CFG_P19 = MUX0[2] ? HSPI[0] : (ESPI0[0] | ESPIe[0]);   // MOSI
   wire [3:0] ESPI_i = {2'b00, P17, 1'b0};
 
   assign E_PD = sysctl[0];
@@ -1144,7 +1220,7 @@ module top(
     else if (P27 == 1'b0)
       hMISO <= chMISO;
 
-  assign P22 = hMISO;
+  assign CFG_P22 = hMISO;
 
   wire SCKclock;
   BUFG _sck (.I(HSPI[4]), .O(SCKclock));

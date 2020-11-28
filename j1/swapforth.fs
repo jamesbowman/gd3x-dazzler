@@ -130,9 +130,8 @@ include core-ext.fs
 ( 0:JUMP    ) :noname [char] J emit space .xt ;
 create _ , , , ,
 
-: see
-    '
-    48 bounds
+: dis
+    bounds
     begin
         cr dup .x
         dup @
@@ -151,6 +150,7 @@ create _ , , , ,
     2drop
 ;
 
+: see ' 48 dis ;
 : dump
     ?dup
     if

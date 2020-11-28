@@ -1111,16 +1111,16 @@ create init meta t' quit 2* target ,
     init @ execute
 ;
 
+\ Word "chain" lives at the top of RAM,
+\ Reading from SPI flash into main memory, one word at a time.
+\ It is self-contained (i.e. it has no calls) so it can run
+\ while the bottom of memory is being replaced.
+\ At the end of loading, it wraps to address 0
 meta
-    link @ t' forth tw!
-    there  t' dp tw!
+tdp @ $4000 $30 - org
 target
-
-meta
-tdp @ $3fc0 org
-$947 tw,
-target
-: bootspan ( a u )
+header chain
+: chain ( a u )
     begin
         h# 0 h# 112 io!
         begin h# 113 io@ until
@@ -1130,6 +1130,10 @@ target
         2dup=
     until
 meta
-$947 tw,
 org
+target
+
+meta
+    link @ t' forth tw!
+    there  t' dp tw!
 target
