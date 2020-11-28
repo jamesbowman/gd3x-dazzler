@@ -1,6 +1,5 @@
 #include daznuc.fs
 
-#include icap.fs
 #include wii.fs
 
 
@@ -358,6 +357,11 @@ create cmd.flash
     (loadbin)
     ;
 
+: load ( d )    \ Load a slot from serial binary stream
+    flashoff 2!
+    eve-diag
+    loadbin
+;
 
 : autoexec
     $13 icap@ $14 icap@ $ff and   \ recover the base load address
@@ -380,6 +384,7 @@ create cmd.flash
 
 : cold
     ." cold"                    sep
+    ." slot " origin .          sep
     dna type                    sep
     stamp type                  sep
     ." GENERAL5=" general5 .x   sep
@@ -421,51 +426,6 @@ include fs.fs
     (loadbin)
     ;
 
-\ ------------------------------------------------------------
-
-: slot ( u - d )  $10 * 0 swap ;
-
-: load ( d )    \ Load a slot from serial binary stream
-    flashoff 2!
-    eve-diag
-    loadbin
-;
-
-\ : run ( d )     \ Boot from a slot
-\     0 mux0 DSPI
-\     2dup $24 m+ read
-\     spiw> $615a = if
-\         $0 $3f80 bounds chain
-\     then
-\     iprog ;
-\ 
-\ : reboot        \ Boot from slot 0
-\     0 slot run ;
-
-: origin ( - d )    \ Which slot we boot from?
-    $14 icap@ 4 rshift 1 and ;
-
-\ A valid slot starts with 22 DA 1E 55, then has a 32-byte 0-terminated string
-: slotvalid
-    slot read
-    spiw> $22DA =
-    spiw> $551E =
-    and ;
-
-: slot?
-    slotvalid
-    0= if '-' emit exit then
-    begin
-        spi> ?dup
-    while
-        emit
-    repeat ;
-
-: slots
-    0 mux0 DSPI
-    8 0 do
-        cr i . i slot?
-    loop cr ;
 \ ------------------------------------------------------------
 
 : hi ( p ) 3 swap $400 + io! ;

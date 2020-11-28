@@ -363,8 +363,8 @@ if __name__ == "__main__":
         # t.pattern()
         fn = "ans/786welcc.ans"
         fn = "intro.ans"
-        fn = "ans/256color.ans"
         fn = "ans/csi_k_2.ans"
+        fn = "ans/256color.ans"
         with open(fn, "rb") as f:
             def getc():
                 return f.read(1)

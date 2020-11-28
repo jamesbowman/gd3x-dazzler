@@ -48,11 +48,16 @@
     loop ;
 
 \ https://pdfs.semanticscholar.org/9ed4/0cc06ae964c7dc944da003ce453cc38e8138.pdf (Table 3)
-: iprog ( d. )
+\ Load register 13,14
+: icap-13 ( d. )
     sync
     $31e1 >icap $ffff >icap
     $3261 >icap swap  >icap
     $3281 >icap $0300 or >icap
+    ;
+
+: iprog ( d. )
+    icap-13
     $32a1 >icap $0000 >icap
     $32c1 >icap $0300 >icap
     $3301 >icap $2100 >icap

@@ -80,7 +80,7 @@
         asteroids
         quit
     then ;
-\ ' cold init !
+' cold init !
 
 \ : s
 \         stream dvg-preamble

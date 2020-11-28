@@ -65,8 +65,7 @@ variable (bright)
 \ from native 0-1023 to EVE coordinate
 : screen
     512 -
-    \ WIDTH 8 * 1024 */
-    7 *
+    12 * 2/
     ;
 
 : plot
@@ -139,6 +138,11 @@ variable (bright)
 : render
     -1 (bright) !
     dvg
+
+    $23000000. >gd
+    $1f000001. >gd
+    $40000000. >gd
+
     0 0 >gd
     $ff01 $ffff >gd
     ;

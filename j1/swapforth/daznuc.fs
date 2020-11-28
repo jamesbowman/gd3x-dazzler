@@ -160,6 +160,11 @@ $25f0 reg REG_FLASH_STATUS
 : read ( d. )       $03 cmd addr ;
 \ ------------------------------------------------------------
 
+#include icap.fs
+#include slots.fs
+
+\ ------------------------------------------------------------
+
 \ At $80000 block is:
 \ $947a     signature
 \   length    4         in bytes
@@ -168,11 +173,11 @@ $25f0 reg REG_FLASH_STATUS
 
 : playstream ( u ) \ play back commands from flash
     DSPI
-    $080000. read
+    origin slot $080000. d+ read
     spiw> $947a <> if
         drop exit
     then
-    $080002.
+    origin slot $080002. d+
     rot 0 ?do
         2dup read 4. d+
         spid> d+
