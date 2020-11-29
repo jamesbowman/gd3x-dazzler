@@ -20,6 +20,8 @@ if __name__ == "__main__":
     gd = Recorder()
     t = textmode.Textmode(gd, 'L')
     t.dump_fs()
+    with open("textmode.gd2", "wb") as f:
+        f.write(gd.pb)
     gd.pb = b''
 
     fn = sys.argv[1]

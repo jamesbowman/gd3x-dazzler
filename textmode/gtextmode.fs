@@ -28,6 +28,7 @@ create spot 4 allot
 2 constant FG
 include _textmode.fs
 
+
 : cmd ( u ) 0 $ffffff00. d+ >gd ;
 : cmd_memcpy ( dst src n )
     $1d cmd ;
