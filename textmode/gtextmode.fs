@@ -24,6 +24,7 @@ create spot 4 allot
 : >gd >spid ;
 : w>gd 0 >spid ;
 
+include _textmode.fs
 include textmode2.fs
 
 : terminal

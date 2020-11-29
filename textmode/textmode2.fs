@@ -1,6 +1,5 @@
 0 constant BG
 2 constant FG
-include _textmode.fs
 
 
 : cmd ( u ) 0 $ffffff00. d+ >gd ;
@@ -155,7 +154,7 @@ variable pa
     's' of cy 2@ csave 2! endof
     'u' of csave 2@ cy 2! endof
 
-    cr ." Unhandled >>> " emit 1 throw
+    cr ." Unhandled >>> " emit
     endcase
 ;
 
