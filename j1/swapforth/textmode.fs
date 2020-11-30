@@ -36,7 +36,12 @@ defer getc
 : x
     0 mux0
     0 playstream
+    /eve-qpi
     stream
     ;
 
 : y s" brilliant" setbuf terminal ;
+
+: inch
+    begin $019 io@ until
+    $01a io@ ;

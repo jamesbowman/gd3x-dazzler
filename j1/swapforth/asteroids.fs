@@ -1,5 +1,4 @@
 #include daznuc.fs
-#include icap.fs
 #include wii.fs
 
 \ IO ports:                     R               W
