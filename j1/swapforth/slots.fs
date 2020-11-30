@@ -18,7 +18,7 @@
     $14 icap@ 4 rshift 7 and ;
 
 \ A valid slot starts with 22 DA 1E 55, then has a 32-byte 0-terminated string
-: slotvalid
+: slotvalid ( u )
     slot read
     spiw> $22DA =
     spiw> $551E =

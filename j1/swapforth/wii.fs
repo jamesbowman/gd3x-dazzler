@@ -8,6 +8,9 @@
 
 variable pl false pl !  \ player select, 
 
+: p1    false pl ! ;
+: p2    true pl ! ;
+
 : i2cr ( 2 or 3 ) 2 pl @ - ;
 
 : i2c!  i2cr io! ;
@@ -53,6 +56,7 @@ variable pl false pl !  \ player select,
     i2c-tx drop ;
 
 defer restart
+defer menu      ' chars is menu
 
 : ack
     if ( cr ." Panic" ) restart then ;
@@ -100,6 +104,9 @@ dup .x
     loop
     drop ;
 
+: salute \ run menu on START + X + Y
+    wiistate 4 + @ $d7fb = if menu then ;
+
 : present ( - f  true if present )
     det dup
     0= if
@@ -127,12 +134,13 @@ dup .x
     then
     ;
 
-: both ( xt ) false pl ! dup execute true pl ! execute ;
+: both ( xt ) p1 dup execute p2 execute ;
 
 : wii-main
     ['] /wii both
     begin
         ['] wii-sense both
+        salute
         wii-commit
     again ;
 
@@ -146,6 +154,7 @@ variable wiiF 0 wiiF !
             /wii
         then
         wii-sense
+        salute
     then
     wiiF !
     ;
