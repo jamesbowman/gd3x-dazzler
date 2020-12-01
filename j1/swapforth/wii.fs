@@ -56,7 +56,7 @@ variable pl false pl !  \ player select,
     i2c-tx drop ;
 
 defer restart
-defer menu      ' chars is menu
+defer menu      ' reboot is menu
 
 : ack
     if ( cr ." Panic" ) restart then ;
@@ -136,12 +136,20 @@ dup .x
 
 : both ( xt ) p1 dup execute p2 execute ;
 
+: check-ctrl-c
+    key? if
+        key $03 = if
+            quit
+        then
+    then ;
+
 : wii-main
     ['] /wii both
     begin
         ['] wii-sense both
         salute
         wii-commit
+        check-ctrl-c
     again ;
 
 variable wiiF 0 wiiF !

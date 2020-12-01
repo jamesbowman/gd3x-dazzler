@@ -54,6 +54,8 @@ variable s_ 0 s_ !
         p1 det $10 and or
         dup display
 
+        check-ctrl-c
+
     again
 ;
 
@@ -74,7 +76,11 @@ variable s_ 0 s_ !
     wii-poll
     200 ms key? if                  \ Keypress in 200 ms, drop to prompt
         quit
-    else
+    then
+    cr
+    cr ." Gameduino 3X Dazzler"
+    cr ." Press ^C for command prompt"
+    cr
     eve-start                       \ init EVE
     wii-poll                        \ Check for START+X+Y
     0 playstream                    \ The load screen

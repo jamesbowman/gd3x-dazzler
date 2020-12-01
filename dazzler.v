@@ -130,7 +130,7 @@ module bram_tdp #(
 // Shared memory
 reg [DATA-1:0] mem [(2**ADDR)-1:0];
   initial begin
-    $readmemh("j1/build/bringup.hex", mem);
+    $readmemh("j1/build/base.hex", mem);
   end
  
 // Port A
