@@ -505,3 +505,18 @@ include fs.fs
         30 4 do i lo 2 +loop  1 ms
     again ;
 
+: service
+    $600 io@ if
+        cr $602 io@ .x
+        $601 io@
+        dup $ff and swap >< $ff and
+        cr .s
+        case
+        $40 of eve-start drop endof
+        $41 of run endof
+        drop
+        endcase
+        $00 $600 io!
+    then ;
+
+: x begin service again ;

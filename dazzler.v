@@ -492,11 +492,8 @@ module top(
   .RST(0)                 // 1-bit input: Reset input pin
   );
 
-  reg [20:0] counter;
-  always @(posedge cfgclk)
-    counter <= counter + 21'd1;
-  // assign P29 = counter[1];
-  // assign P7 = counter[1];
+  reg [15:0] daz_spi_command;
+  reg [7:0] daz_spi_status = 8'hff;
 
   wire [15:0] sample;
   integrator _integrator(
@@ -861,6 +858,10 @@ module top(
     ((io_a[11:0] == 12'h300) ? {8'd0, dvgd} : 16'd0) |                            // 
     ((io_a[11:0] == 12'h301) ? m6502_debug : 16'd0) |                             // 
     ((io_a[11:0] == 12'h302) ? {15'd0, dvg_go_flag} : 16'd0) |                    // 
+
+    ((io_a[11:0] == 12'h600) ? {8'd0, daz_spi_status} : 16'd0) |                  // 
+    ((io_a[11:0] == 12'h601) ? daz_spi_command : 16'd0) |                         // 
+    ((io_a[11:0] == 12'h602) ? {15'd0, daz_spi_mailbox} : 16'd0) |                         // 
 
     (io_a[12] ? {8'd0, uart0_data} : 16'd0) | 
     (io_a[13] ? {11'd0, 1'b0, 1'b0, 1'b0, uart0_valid, !uart0_busy} : 16'd0);
@@ -1230,16 +1231,37 @@ module top(
 
   wire SCKclock;
   BUFG _sck (.I(HSPI[4]), .O(SCKclock));
-  reg [191:0] sup_sr;
+  reg [207:0] sup_sr;
   reg [7:0] sup_ix;
+
+  reg daz_spi_mailbox;
+  reg daz_spi_mailbox_;
 
   always @(posedge P27 or posedge SCKclock)
     if (P27) begin
-      sup_sr <= {WII2e, WII2, WII1e, WII1};
+      sup_sr <= {WII2e, WII2, WII1e, WII1, daz_spi_status, 8'hda};
       sup_ix <= 0;
     end else begin
+      if (sup_ix < 8'd16)
+        daz_spi_command <= {daz_spi_command[14:0], P28};
+      if (sup_ix == 8'd15)
+        daz_spi_mailbox <= ~daz_spi_mailbox;
       sup_ix <= sup_ix + 8'd1;
     end
+
+  reg [3:0] mbox;
+  always @(posedge cpuclk)
+    mbox <= {daz_spi_mailbox, mbox[3:1]};
+
+  always @(posedge cpuclk) begin
+    if (mbox[0] != daz_spi_mailbox_) begin
+      daz_spi_status <= 8'hff;
+    end
+    daz_spi_mailbox_ <= mbox[0];
+
+    if (io_w & (io_a[11:0] == 12'h600))
+      daz_spi_status <= io_wd[7:0];
+  end
 
   assign chMISO = sup_sr[{sup_ix[7:3], ~sup_ix[2:0]}];
 
