@@ -129,7 +129,7 @@ $25f0 reg REG_FLASH_STATUS
 : eve-start
     $14 ioff 5 ms $14 ion
     0 MUX0
-    CSPI
+    CSPI /spi/
 
     $61 $46 host2
     $44     host        \ external clock
@@ -200,3 +200,21 @@ $25f0 reg REG_FLASH_STATUS
     repeat
     2drop
     ;
+
+\ ------------------------------------------------------------
+
+: sack
+    $00 $600 io! ;
+
+: service
+    $600 io@ if
+        $601 io@
+cr ." CMD:" dup .x
+        dup $ff and swap >< $ff and
+        case
+        $40 of eve-start drop endof
+        $41 of sack run endof
+        drop
+        endcase
+        sack
+    then ;

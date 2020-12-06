@@ -3,8 +3,10 @@
 
 
 : cmd ( u ) 0 $ffffff00. d+ >gd ;
-: cmd_memcpy ( dst src n )
+: cmd_memcpy \ dst src n
     $1d cmd ;
+: cmd_memwrite \ dst n
+    $1a cmd ;
 
 2variable cy                    \ so "cy 2@" is ( x y )
 cy cell+ constant cx
@@ -81,7 +83,11 @@ variable pa
     BG setcolor FG setcolor
     ;
 
-: yoff yo @ + t.H mod ;
+: hmod
+    t.H 1- over <
+    t.H and - ;
+
+: yoff yo @ + hmod ;
 : cursor
     cy 2@
     yoff
@@ -123,7 +129,7 @@ variable pa
         cy @ a0 - 0 max cy !
     endof
     'B' of
-        cy @ a0 + t.H 1- min cy !
+        cy @ a0 + t.H 2 - min cy !
     endof
     'C' of
         cx @ a0 +  t.W 1- min cx !
@@ -161,7 +167,7 @@ variable pa
 : down1
     1 cy +!
     cy @ t.H 1- = if
-        yo @ 1+ t.H mod yo !
+        yo @ 1+ hmod yo !
         -1 cy +!
         0 t.W lineclr
         cmd_memcpy
@@ -201,3 +207,25 @@ variable pa
     then
     ;
 
+: v2f ( x y )
+    $7fff and swap
+    tuck 15 lshift or
+    swap $7fff and 2/ $4000 or
+    >gd ;
+
+: macro1
+    cmd_memwrite
+    $3020dc. >gd
+    4 w>gd
+    ;
+
+: showcursor
+    macro1
+    cx @ t.w2 *
+    cy @ 1+ t.h2 * t.curh -
+    v2f
+    ;
+
+: hidecursor
+    macro1
+    $2d000000. >gd ;

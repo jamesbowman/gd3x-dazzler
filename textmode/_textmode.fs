@@ -6,3 +6,6 @@
 170 constant t.g
 128 constant t.W
 35 constant t.H
+10 constant t.w2
+21 constant t.h2
+5 constant t.curh

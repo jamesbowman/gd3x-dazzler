@@ -2,159 +2,126 @@
 
 `define CONFIG_SPI
 
-module HDMI_encoder_2(
-  input  wire pclk,
-  input  wire [29:0] d,
-  input  wire pclkx2,
-  input  wire pclkx10,
-  input  wire serdesstrobe,
-
-  output wire out_C_N,
-  output wire out_C_P,
-  output wire out_0_N,
-  output wire out_0_P,
-  output wire out_1_N,
-  output wire out_1_P,
-  output wire out_2_N,
-  output wire out_2_P
-  );
-
-  wire [9:0] red, green, blue;
-  assign {red, green, blue} = d;
-  wire [29:0] s_data = {red[9:5], green[9:5], blue[9:5],
-                        red[4:0], green[4:0], blue[4:0]};
-  wire [4:0] tmds_data0, tmds_data1, tmds_data2;
-
-  wire rstin = 0;
-  wire serdes_rst = 0;
-
-  convert_30to15_fifo pixel2x (
-    .rst     (rstin),
-    .clk     (pclk),
-    .clkx2   (pclkx2),
-    .datain  (s_data),
-    .dataout ({tmds_data2, tmds_data1, tmds_data0}));
-
-  wire [2:0] tmdsint;
-  serdes_n_to_1 #(.SF(5)) oserdes0 (
-             .ioclk(pclkx10),
-             .serdesstrobe(serdesstrobe),
-             .reset(serdes_rst),
-             .gclk(pclkx2),
-             .datain(tmds_data0),
-             .iob_data_out(tmdsint[0])) ;
-
-  serdes_n_to_1 #(.SF(5)) oserdes1 (
-             .ioclk(pclkx10),
-             .serdesstrobe(serdesstrobe),
-             .reset(serdes_rst),
-             .gclk(pclkx2),
-             .datain(tmds_data1),
-             .iob_data_out(tmdsint[1])) ;
-
-  serdes_n_to_1 #(.SF(5)) oserdes2 (
-             .ioclk(pclkx10),
-             .serdesstrobe(serdesstrobe),
-             .reset(serdes_rst),
-             .gclk(pclkx2),
-             .datain(tmds_data2),
-             .iob_data_out(tmdsint[2])) ;
-
-  wire [2:0] TMDSp, TMDSn;    // 2:red 1:grn 0:blu
-  wire TMDSp_clock, TMDSn_clock;
-
-  OBUFDS TMDS0 (.I(tmdsint[0]), .O(TMDSp[0]), .OB(TMDSn[0])) ;
-  OBUFDS TMDS1 (.I(tmdsint[1]), .O(TMDSp[1]), .OB(TMDSn[1])) ;
-  OBUFDS TMDS2 (.I(tmdsint[2]), .O(TMDSp[2]), .OB(TMDSn[2])) ;
-
-  reg [4:0] tmdsclkint = 5'b00000;
-  reg toggle = 1'b0;
-
-  always @ (posedge pclkx2 or posedge serdes_rst) begin
-    if (serdes_rst)
-      toggle <= 1'b0;
-    else
-      toggle <= ~toggle;
-  end
-
-  always @ (posedge pclkx2) begin
-    if (toggle)
-      tmdsclkint <= 5'b11111;
-    else
-      tmdsclkint <= 5'b00000;
-  end
-
-  wire tmdsclk;
-
-  serdes_n_to_1 #(
-    .SF           (5))
-  clkout (
-    .iob_data_out (tmdsclk),
-    .ioclk        (pclkx10),
-    .serdesstrobe (serdesstrobe),
-    .gclk         (pclkx2),
-    .reset        (serdes_rst),
-    .datain       (tmdsclkint));
-
-  OBUFDS TMDS3 (.I(tmdsclk), .O(TMDSp_clock), .OB(TMDSn_clock)) ;// clock
-
-  assign out_C_N = TMDSn_clock;
-  assign out_C_P = TMDSp_clock;
-  assign out_0_N = TMDSn[0];
-  assign out_0_P = TMDSp[0];
-  assign out_1_N = TMDSn[1];
-  assign out_1_P = TMDSp[1];
-  assign out_2_N = TMDSn[2];
-  assign out_2_P = TMDSp[2];
-endmodule
-
 module bram_tdp #(
     parameter DATA = 72,
-    parameter ADDR = 10
+    parameter ADDR = 10,
+    parameter INIT = 0
 ) (
-    // Port A
-    input    wire                a_clk,
-    input    wire         [1:0]  a_wr,
-    input    wire    [ADDR-1:0]  a_addr,
-    input    wire    [DATA-1:0]  a_din,
-    output  reg     [DATA-1:0]  a_dout,
-     
-    // Port B
-    input    wire                b_clk,
-    input    wire                b_wr,
-    input    wire    [ADDR-1:0]  b_addr,
-    input    wire    [DATA-1:0]  b_din,
-    output  reg     [DATA-1:0]  b_dout
+  // Port A
+  input    wire                a_clk,
+  input    wire         [1:0]  a_wr,
+  input    wire    [ADDR-1:0]  a_addr,
+  input    wire    [DATA-1:0]  a_din,
+  output  reg     [DATA-1:0]  a_dout,
+   
+  // Port B
+  input    wire                b_clk,
+  input    wire                b_wr,
+  input    wire    [ADDR-1:0]  b_addr,
+  input    wire    [DATA-1:0]  b_din,
+  output  reg     [DATA-1:0]  b_dout
 );
  
-// Shared memory
-reg [DATA-1:0] mem [(2**ADDR)-1:0];
-  initial begin
-    $readmemh("j1/build/base.hex", mem);
+  // Shared memory
+  reg [DATA-1:0] mem [(2**ADDR)-1:0];
+    initial begin
+      if (INIT)
+        $readmemh("j1/build/base.hex", mem);
+    end
+   
+  // Port A
+  always @(posedge a_clk) begin
+      a_dout      <= mem[a_addr];
+      if(a_wr[0]) begin
+          a_dout[7:0]      <= a_din[7:0];
+          mem[a_addr][7:0] <= a_din[7:0];
+      end
+      if(a_wr[1]) begin
+          a_dout[15:8]      <= a_din[15:8];
+          mem[a_addr][15:8] <= a_din[15:8];
+      end
+  end
+   
+  // Port B
+  always @(posedge b_clk) begin
+      b_dout      <= mem[b_addr];
+      if(b_wr) begin
+          b_dout      <= b_din;
+          mem[b_addr] <= b_din;
+      end
   end
  
-// Port A
-always @(posedge a_clk) begin
-    a_dout      <= mem[a_addr];
-    if(a_wr[0]) begin
-        a_dout[7:0]      <= a_din[7:0];
-        mem[a_addr][7:0] <= a_din[7:0];
-    end
-    if(a_wr[1]) begin
-        a_dout[15:8]      <= a_din[15:8];
-        mem[a_addr][15:8] <= a_din[15:8];
-    end
-end
- 
-// Port B
-always @(posedge b_clk) begin
-    b_dout      <= mem[b_addr];
-    if(b_wr) begin
-        b_dout      <= b_din;
-        mem[b_addr] <= b_din;
-    end
-end
- 
+endmodule
+
+module g2b(
+  input  wire [11:0] i,
+  output wire [11:0] o);
+  assign o[11] = i[11];
+  assign o[10] = i[11] ^ i[10];
+  assign o[9] = i[11] ^ i[10] ^ i[9];
+  assign o[8] = i[11] ^ i[10] ^ i[9] ^ i[8];
+  assign o[7] = i[11] ^ i[10] ^ i[9] ^ i[8] ^ i[7];
+  assign o[6] = i[11] ^ i[10] ^ i[9] ^ i[8] ^ i[7] ^ i[6];
+  assign o[5] = i[11] ^ i[10] ^ i[9] ^ i[8] ^ i[7] ^ i[6] ^ i[5];
+  assign o[4] = i[11] ^ i[10] ^ i[9] ^ i[8] ^ i[7] ^ i[6] ^ i[5] ^ i[4];
+  assign o[3] = i[11] ^ i[10] ^ i[9] ^ i[8] ^ i[7] ^ i[6] ^ i[5] ^ i[4] ^ i[3];
+  assign o[2] = i[11] ^ i[10] ^ i[9] ^ i[8] ^ i[7] ^ i[6] ^ i[5] ^ i[4] ^ i[3] ^ i[2];
+  assign o[1] = i[11] ^ i[10] ^ i[9] ^ i[8] ^ i[7] ^ i[6] ^ i[5] ^ i[4] ^ i[3] ^ i[2] ^ i[1];
+  assign o[0] = i[11] ^ i[10] ^ i[9] ^ i[8] ^ i[7] ^ i[6] ^ i[5] ^ i[4] ^ i[3] ^ i[2] ^ i[1] ^ i[0];
+endmodule
+
+module b2g(
+  input  wire [11:0] i,
+  output wire [11:0] o);
+  assign o = {i[11], i[11:1] ^ i[10:0]};
+endmodule
+
+module audio_fifo(
+  input  wire wclk,
+  input  wire [15:0] wd,
+  input  wire w,
+  output wire [11:0] space,   // in wclk's domain
+
+  input  wire rclk,
+  output wire [15:0] rd,
+  input  wire r
+  );
+
+  reg [11:0] wp, rp;
+
+  // Need rp in wp's domain: gray code -> sync -> binary
+  wire [11:0] rp0;
+  reg [11:0] rp1;
+  reg [11:0] rp2;
+  wire [11:0] rpw;
+  b2g _a(.i(rp), .o(rp0));
+  always @(posedge rclk)
+    rp1 <= rp0;
+  always @(posedge wclk)
+    rp2 <= rp1;
+  g2b _b(.i(rp2), .o(rpw));
+
+  wire [11:0] fullness = (wp - rpw);
+  assign space = 12'd2048 - fullness;
+
+  bram_tdp #(.DATA(16), .ADDR(11)) fiforam (
+    .a_clk(wclk),
+    .a_wr({2{w}}),
+    .a_addr(wp[10:0]),
+    .a_din(wd),
+
+    .b_clk(rclk),
+    .b_wr(1'b0),
+    .b_addr(rp[10:0]),
+    .b_din(16'd0),
+    .b_dout(rd));
+
+  always @(posedge wclk)
+    wp <= wp + {11'd0, w};
+
+  always @(posedge rclk)
+    rp <= rp + {11'd0, r};
+
 endmodule
 
 module cpu(
@@ -178,7 +145,7 @@ module cpu(
   wire [15:0] io_addrN, io_wdN;
   wire io_rN, io_wN;
 
-  bram_tdp #(.DATA(16), .ADDR(13)) nram (
+  bram_tdp #(.DATA(16), .ADDR(13), .INIT(1)) nram (
     .a_clk(clk),
     .a_wr({mem_wr16 | (mem_wr8 & mem_addr[0]),
            mem_wr16 | (mem_wr8 & ~mem_addr[0])}),
@@ -797,6 +764,7 @@ module top(
 
   reg [15:0] asteroids_switches;
 
+  wire [71:0] soundblock;
   asteroids _asteroids (
     .fastclk(cpuclk),
     .reset(m6502_reset),
@@ -806,6 +774,7 @@ module top(
     .dvgclk(cpuclk),
     .dvga(dvga),
     .dvgd(dvgd),
+    .soundblock(soundblock),
     .debug(m6502_debug)
   );
 
@@ -859,9 +828,18 @@ module top(
     ((io_a[11:0] == 12'h301) ? m6502_debug : 16'd0) |                             // 
     ((io_a[11:0] == 12'h302) ? {15'd0, dvg_go_flag} : 16'd0) |                    // 
 
+    ((io_a[11:0] == 12'h310) ? soundblock[15:0] : 16'd0) |                        // 
+    ((io_a[11:0] == 12'h311) ? soundblock[31:16] : 16'd0) |                       // 
+    ((io_a[11:0] == 12'h312) ? soundblock[47:32] : 16'd0) |                       // 
+    ((io_a[11:0] == 12'h313) ? soundblock[63:48] : 16'd0) |                       // 
+    ((io_a[11:0] == 12'h314) ? {8'd0, soundblock[71:64]} : 16'd0) |               // 
+
     ((io_a[11:0] == 12'h600) ? {8'd0, daz_spi_status} : 16'd0) |                  // 
     ((io_a[11:0] == 12'h601) ? daz_spi_command : 16'd0) |                         // 
-    ((io_a[11:0] == 12'h602) ? {15'd0, daz_spi_mailbox} : 16'd0) |                         // 
+    ((io_a[11:0] == 12'h602) ? {15'd0, daz_spi_mailbox} : 16'd0) |                // 
+
+    ((io_a[11:0] == 12'h700) ? {4'd0, af_space} : 16'd0) |                  // 
+    ((io_a[11:0] == 12'h701) ? af_sample : 16'd0) |                  // 
 
     (io_a[12] ? {8'd0, uart0_data} : 16'd0) | 
     (io_a[13] ? {11'd0, 1'b0, 1'b0, 1'b0, uart0_valid, !uart0_busy} : 16'd0);
@@ -988,13 +966,6 @@ module top(
     d <= dN;
   end 
   wire audio_w = ~d[31];
-
-  reg [15:0] sampleL = 16'h1111, sampleR = 16'h2222;
-  always @(posedge pclk)
-    if (audio_w) begin
-      sampleL <= sampleL + 16'haa;
-      sampleR <= sampleR + 16'hbb;
-    end
 
   reg [6:0] th;
   reg [15:0] sa;
@@ -1143,20 +1114,22 @@ module top(
     end
   end
 
+  wire [15:0] af_sample;
+  wire [11:0] af_space;
+  audio_fifo _af(
+    .wclk(cpuclk),
+    .wd(io_wd),
+    .w(io_w & (io_a[11:0] == 12'h700)),
+    .rclk(pclk),
+    .rd(af_sample),
+    .r(audio_w),
+    .space(af_space));
+
+  wire [15:0] mixed = af_sample + sample;
+
   wire [29:0] d0;
-  hdmi hdmi_ (.clk(pclk), .dd1(dd1), .d(d0), .audio_w(audio_w), .audio({sample, sample}));
-`ifdef DEBUG_LVDS
-    assign {
-      TMDS_CLK_N,
-      TMDS_CLK_P,
-      TMDS0_N,
-      TMDS0_P,
-      TMDS1_N,
-      TMDS1_P,
-      TMDS2_N,
-      TMDS2_P} = probe[7:0];
-`else
-  HDMI_encoder_2 e2(
+  hdmi hdmi_ (.clk(pclk), .dd1(dd1), .d(d0), .audio_w(audio_w), .audio({mixed, mixed}));
+  LVDS_encoder e2(
     .pclk(pclk),
     .d(d0),
     .pclkx2(pclkx2),
@@ -1172,7 +1145,6 @@ module top(
     .out_2_N(TMDS2_N),
     .out_2_P(TMDS2_P)
     );
-`endif
 
   // 5    4    3    2    1    0
   // CS   SCK  IO3  IO2  MISO MOSI

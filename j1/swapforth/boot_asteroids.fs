@@ -46,7 +46,7 @@
 
 : asteroids
     0 mux0
-    CSPI
+    CSPI idle sack
     eve-start 0 playstream finish
 
     /eve-qpi
@@ -57,6 +57,7 @@
     0
     begin
 \ cr .s
+        service
         stream dvg-preamble
         2 c
         $302 io@
@@ -68,6 +69,13 @@
         wii-poll controls
         finish
         REG_FRAMES eve@ tuck - -1 <> if cr ." dropped" .s then
+
+        cr
+        $310 io@ .x
+        $311 io@ .x
+        $312 io@ .x
+        $313 io@ .x
+        $314 io@ .x
     again
     ;
 

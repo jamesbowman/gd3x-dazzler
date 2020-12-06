@@ -122,11 +122,20 @@ class Textmode:
         gd.BitmapHandle(1)
         gd.cmd_setbitmap(cm, eve.RGB565, W, 1)
         size(w2 * W, h2)
-        if 1:
+
+        # Cursor box
+        self.curh = h2 // 4
+        gd.BitmapHandle(2)
+        gd.cmd_setbitmap(2 * (255 + 2), eve.RGB565, 1, 1)
+        gd.BitmapSize(eve.NEAREST, eve.REPEAT, eve.REPEAT, w2, self.curh)
+
+        if 0:
             random.seed(0)
             b = bytes([rr(256) for i in range(2 * 2 * W * H)])
             gd.cmd_memwrite(cm, len(b))
             gd.cc(eve.align4(b))
+        else:
+            gd.cmd_memzero(cm, 2 * 2 * W * H)
 
         def gaddr(x, y):
             return fb + x * (w2 * h) + y * (w2 * h * W)
@@ -141,11 +150,12 @@ class Textmode:
             gd.cc(struct.pack("<I", color))
             gd.cmd_memwrite(caddr(x, y, 1), 2)
             gd.cc(struct.pack("<I", bg))
-        for i in range(20):
-            drawch(0, i, str(i % 10))
-            if i & 1:
-                drawch(W - 1, i, str(i % 10))
-                
+        if 0:
+            for i in range(20):
+                drawch(0, i, str(i % 10))
+                if i & 1:
+                    drawch(W - 1, i, str(i % 10))
+                    
         def colorpass(z):
             gd.SaveContext()
             gd.BitmapHandle(1)
@@ -187,6 +197,16 @@ class Textmode:
         gd.BlendFunc(eve.DST_ALPHA, eve.ONE_MINUS_DST_ALPHA)
         colorpass(0)
 
+        # Cursor drawing
+        gd.VertexTranslateY(16 * 0)
+        gd.BlendFunc(eve.SRC_ALPHA, eve.ONE_MINUS_SRC_ALPHA)
+        gd.Begin(eve.BITMAPS)
+        gd.BitmapHandle(2)
+        (cursorx, cursory) = (0, 0)
+        gd.Macro(1)
+        gd.cmd_memwrite(eve.REG_MACRO_1, 4)
+        gd.Vertex2f(cursorx * w2, (cursory + 1) * h2 - self.curh)
+
         gd.swap()
 
         self.colors = (7, 0)
@@ -220,6 +240,9 @@ class Textmode:
             f.write("%d constant t.g\n" % (self.w2 * self.h))
             f.write("%d constant t.W\n" % self.W)
             f.write("%d constant t.H\n" % self.H)
+            f.write("%d constant t.w2\n" % self.w2)
+            f.write("%d constant t.h2\n" % self.h2)
+            f.write("%d constant t.curh\n" % self.curh)
 
     def clr(self, p0, p1):
         for z in (0,1):

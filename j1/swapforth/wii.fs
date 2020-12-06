@@ -147,7 +147,7 @@ dup .x
     ['] /wii both
     begin
         ['] wii-sense both
-        salute
+        salute service
         wii-commit
         check-ctrl-c
     again ;

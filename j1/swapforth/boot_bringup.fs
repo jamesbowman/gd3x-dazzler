@@ -505,18 +505,68 @@ include fs.fs
         30 4 do i lo 2 +loop  1 ms
     again ;
 
-: service
-    $600 io@ if
-        cr $602 io@ .x
-        $601 io@
-        dup $ff and swap >< $ff and
-        cr .s
-        case
-        $40 of eve-start drop endof
-        $41 of run endof
-        drop
-        endcase
-        $00 $600 io!
-    then ;
+\ ------------------------------------------------------------
 
-: x begin service again ;
+\ #include sincos.fs
+\ 
+\ : sine
+\     0
+\     begin
+\         begin $700 io@ until
+\         dup isin $7fff m* nip $700 io!
+\         $230 +
+\     again
+\     ;
+
+: x
+    begin
+        $700 io@ 4 > if
+            400 $700 io!
+            -400 $700 io!
+        else
+            '.' emit
+        then
+    again
+    ;
+
+: x
+    2048 0 do
+        dup i 8 and if negate then
+        $700 io!
+    loop
+    drop
+    begin
+        $701 io@ .x
+    again
+    ;
+
+: y
+    $700 io@ 1 ms $700 io@
+    swap .x .x
+    ;
+
+: feed
+    begin $700 io@ until
+    $700 io! ;
+
+: silence 2048 0 do 0 feed loop ;
+: playsample ( u ) \ play back commands from flash
+    DSPI
+    origin slot $080002. d+
+    rot 0 ?do
+        2dup read 4. d+
+        spid> d+
+    loop
+    read spid>
+    d2/
+    2dup d.
+    begin
+        2dup or
+    while
+        spiw> 2/ feed
+        -1. d+
+    repeat
+    ;
+
+: x
+    2 playsample silence ;

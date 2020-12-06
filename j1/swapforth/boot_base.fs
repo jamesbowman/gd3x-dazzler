@@ -81,6 +81,7 @@ variable s_ 0 s_ !
     cr ." Gameduino 3X Dazzler"
     cr ." Press ^C for command prompt"
     cr
+    CSPI idle sack
     eve-start                       \ init EVE
     wii-poll                        \ Check for START+X+Y
     0 playstream                    \ The load screen
