@@ -16,6 +16,9 @@ def crc(s):     # CRC-32 of string s
 import common
 from spidriver import SPIDriver
 
+sys.path.append("../textmode")
+import textmode
+
 random.seed(7)
 rr = random.randrange
 
@@ -581,9 +584,12 @@ if __name__ == "__main__":
     # ---------------------------- Textmode
     gd = Gameduino()
     gd.setup_1280x720()
+    t = textmode.Textmode(gd, 'L')
+    t.dump_fs()
+
     with open("../textmode/textmode.gd2", "rb") as f:
         textmode_l = f.read()
     make_liteboot("Text mode",
                   "../j1/build/textmode.hex",
-                  [gd.buf + textmode_l],
+                  [gd.buf],
                   "_loadflash_textmode.bin")

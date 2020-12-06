@@ -20,7 +20,7 @@ BG = 0
 def x565(r):
     c = r["rgb"]
     return as565(c["r"], c["g"], c["b"])
-c256 = [x565(r) for r in json.load(open("data.json"))]
+c256 = [x565(r) for r in json.load(open("assets/data.json"))]
 
 colorblk = array.array('H',
             [c256[0], c256[7]] +
