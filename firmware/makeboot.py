@@ -161,95 +161,6 @@ class Gameduino(eve.Gameduino):
         self.w = 640
         self.h = 480
 
-def make_fallback():
-    gd = Gameduino()
-    # gd.setup_640_480()
-    gd.setup_1280x720()
-
-    gd.ClearColorRGB(0, 40, 0)
-    gd.Clear()
-    gd.cmd_text(100, 100, 31, 0, "FALLBACK")
-    gd.swap()
-
-    return gd.buf
-
-def sector_1():
-    gd = Gameduino()
-    gd.setup_1280x720()
-    gd.pack()
-    return gd.buf
-
-def make_flash():
-    gd = Gameduino()
-    blob_addr = 0x8000
-    gd.cmd_inflate(blob_addr)
-    img = open("assets/unified.blob", "rb").read() + sector_1()
-    assert len(img) == 8192
-    c = eve.align4(zlib.compress(img, 9))
-    gd.cc(c)
-    gd.cmd_flashupdate(0, blob_addr, len(img))
-    gd.cmd_flashfast()
-    return gd.buf
-
-def make_bringup():
-    gd = Gameduino()
-    gd.setup_1280x720()
-
-    if 1:
-        gd.VertexFormat(0)
-        gd.ClearColorRGB(0xff, 0xff, 0xff)
-        gd.SaveContext()
-        gd.Clear()
-        gd.ClearColorRGB(0, 0, 0)
-        gd.ScissorSize(1280 - 2, 720 - 2)
-        gd.ScissorXY(1, 1)
-        gd.Clear()
-
-        (x0, x1) = (20, 1280 - 20)
-        (y, H, Y) = (20, 50, 120)
-        for i,(cname, rgb) in enumerate([("red", 0xff0000), ("green", 0xff00), ("blue", 0xff), ("white", 0xffffff)]):
-            gd.ScissorSize(x1 - x0, H)
-            gd.ScissorXY(x0, y)
-            gd.cmd_gradient(x0, 0, 0x000000, x1, 0, rgb)
-            y += Y
-        gd.RestoreContext()
-
-        gd.cmd_setbitmap(0, eve.RGB332, 1, 1)
-        gd.BitmapSize(eve.NEAREST, eve.REPEAT, eve.REPEAT, 40, 40)
-
-        def part(i, name):
-            x = 200 + 300 * (i // 3)
-            y = 470 + 60 * (i % 3)
-            gd.cmd_text(x + 190, y, 31, eve.OPT_RIGHTX, name + "")
-            gd.Cell(i)
-            gd.Vertex2f(x + 220, y + 5)
-        tests = ["flash U2",
-                 "flash U4",
-                 "U4 quad",
-                 "EVE audio",
-                 "EVE quad",
-                 "video bus",
-                 "i2c",
-                 "clock",
-                 "Loaded" ]
-        [part(i, n) for (i, n) in enumerate(tests)]
-        gd.cmd_memset(0, 0b01001001, len(tests)) # all gray initially
-
-        gd.cmd_text(640, 690, 31, eve.OPT_CENTER, __VERSION__)
-
-        if 0:
-            gd.Cell(0)
-            gd.cmd_setbitmap(0x1000, eve.RGB565, 512, 400)
-            gd.Vertex2f(5, 5)
-
-        gd.ColorRGB(0xe0, 0xe0, 0xe0)
-        gd.cmd_text(10, 690, 29, eve.OPT_CENTERY | eve.OPT_FORMAT, "%s", 0xb0000)
-        gd.cmd_text(1270, 690, 29, eve.OPT_RIGHTX | eve.OPT_CENTERY | eve.OPT_FORMAT, "%s", 0xb0100)
-
-        gd.swap()
-
-    return gd.buf
-
 # 8-bit display, controlled by ClearStencil:
 #   0-3 slot highlight
 #   4   microSD on
@@ -500,24 +411,6 @@ def dump_include(filename, bb, op = ">spi"):
         f.write(textwrap.fill(tb, 127))
         f.write("\nfinish\n")
 
-def dump_init(filename, bb):
-    print(filename, "is", len(bb) // 4)
-    lc = len(bb) // 4
-    tb = " ".join([("%d %s" % (b, "c,")) for b in [lc] + list(bb)])
-    with open(filename, "wt") as f:
-        f.write(textwrap.fill(tb, 127))
-        f.write("\n")
-
-def make_sector_1():
-    gd = Gameduino()
-    gd.setup_1280x720()
-    gd.pack()
-    print("Sector 1 CRC %08X" % crc(gd.buf))
-    cd = eve.align4(zlib.compress(gd.buf, 9))
-    with open("_sector1.h", "wt") as f:
-        f.write(",".join([str(s) for s in cd]))
-        f.write("\n")
-
 def sample(fn):
     with wave.open(fn, 'rb') as wf:
         nf = wf.getnframes()
@@ -526,22 +419,10 @@ def sample(fn):
         return mono.tobytes()
 
 if __name__ == "__main__":
-    make_sector_1()
-
-    br = make_bringup()
-    dump_init("_bringup.fs", br)
-
-    fl = make_flash()
-    dump_init("_flash.fs", fl)
-
     au = sample("assets/bassoon-g4.wav")
 
     po = poweron()
-    fa = make_fallback()
     me = make_menu()
-    # print([hex(i) for i in array.array('I', me[:32])])
-    # preview(me)
-    dump_include("_fallback.fs", fa)
 
     # ---------------------------- Base
     make_heavyboot("Dazzler boot (%s)" % __VERSION__,
