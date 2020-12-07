@@ -1,0 +1,2 @@
+Official Asteroids sound samples for use in MAME v0.36b16 or earlier.
+All samples modified/enhanced by Gyrovision.
