@@ -203,6 +203,72 @@ $25f0 reg REG_FLASH_STATUS
 
 \ ------------------------------------------------------------
 
+: result
+    finish
+    REG_CMD_WRITE eve@ 4 -
+    $fff and s>d $308000. d+
+    eve@. ;
+
+2variable flashoff  \ flash offset for e2fl
+0. flashoff 2!
+
+: addro ( d. )
+    flashoff 2@ d+ addr ;
+
+: e2fl ( d. )
+    DSPI
+    dup 1+ 0 do
+        cr i .
+        $d8 wcmd 0 i addro notbusy
+    loop
+
+    CSPI $1000. evea /in/ spi> drop
+    DSPI
+
+    $100 um/mod nip 1+
+    0 do
+        i 100 mod 0= if cr i . then
+        $02 wcmd i $100 um* addro
+        $40 0 do
+            CSPI spid> DSPI >spid
+        loop
+        notbusy
+    loop
+    ;
+
+: (loadbin)
+    \ Now: $ffff8: length, $ffffc: CRC
+    cspi
+    $ffffc. eve@. result d=
+    dup if
+        $ffff8. eve@. e2fl
+    then
+    ;
+
+: loadbin
+    0 MUX0 CSPI
+    begin
+        begin cmdspace 255 > until stream
+        $b8 emit
+        key
+    while
+        256 0 do
+            key >spi
+        loop
+    repeat 
+    finish
+
+    (loadbin)
+    ;
+
+: load ( d )    \ Load a slot from serial binary stream
+    flashoff 2!
+    eve-start
+    loadbin
+;
+
+\ ------------------------------------------------------------
+
 : sack
     $00 $600 io! ;
 

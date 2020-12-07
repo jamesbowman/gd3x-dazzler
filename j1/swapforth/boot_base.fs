@@ -31,7 +31,31 @@ variable s_ 0 s_ !
 : button ( bit byte -- t/f )
     wiistate + c@ and 0= ;
 
-: bootmenu
+: dialog ( a u )
+    0. eve! >>eve 0 >spi
+    2 playstream
+    begin
+        wii-edge $0004 =
+    until
+    ;
+
+: loadsd ( s )
+    3 playstream
+    /fat32
+    ls
+    s" image.dazzler" fplay
+    CSPI
+    dup 0= if
+        $1024. eve@ $5a61 = if
+            s" Slot 0 must a full boot image" dialog drop exit
+        then
+    then
+    slot flashoff 2!
+    1 display
+    \ (loadbin)
+    ;
+
+: bootloop
     ['] chars is menu
     0 mux0
     eve-start
@@ -41,23 +65,26 @@ variable s_ 0 s_ !
 
     0
     begin
-        cr .s
-
-        wii-edge case
+        wii-edge
+        dup if cr .s then
+        case
         $1000 of run endof
+        $0800 of loadsd exit endof
         $0040 of 1+ endof
         $0100 of 1- endof
         endcase
 
-        $7 and
         p2 det $20 and or
         p1 det $10 and or
         dup display
+        $7 and
 
         check-ctrl-c
 
     again
 ;
+
+: bootmenu begin bootloop again ;
 
 : /sd-present
     ESPI /spi/
@@ -88,3 +115,7 @@ variable s_ 0 s_ !
     5 MUX0                          \ User has the SPI
     wii-main                        \ wii port loop, never returns
 ; init !
+
+: x
+    begin cr $16 io@ .x $17 io@ .x again ;
+

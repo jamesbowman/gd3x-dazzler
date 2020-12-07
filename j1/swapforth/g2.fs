@@ -1,3 +1,3 @@
 2 slot
-#binclude load _loadflash_asteroids.bin
+#binclude load ../../firmware/_loadflash_asteroids.bin
 

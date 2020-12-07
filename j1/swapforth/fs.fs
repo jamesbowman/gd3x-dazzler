@@ -151,6 +151,8 @@ is sector+
 : cseg ( a u u - a' )
     do i scratch + c@ over c! 1+ 2 +loop ;
 
+: newname pad 128 erase ;
+
 : pad0 ( - a u )    \ The NUL-terminated string at PAD
     pad dup
     begin
@@ -162,6 +164,7 @@ is sector+
 
 : root ( xt )
     root_dir_first_cluster 2@ cluster
+    newname
     begin
         32 get
         [ $00 scr ] c@
@@ -175,6 +178,7 @@ is sector+
             then
             [ $0b scr ] c@ $18 and 0= if
                 dup >r execute r>
+                newname
             then
         then
     repeat
@@ -184,7 +188,7 @@ is sector+
 : f.size    [ $1c scr ] 2@l ;
 : f.clus    [ $1a scr ] @ [ $14 scr ] @ ;
 : (ls)      cr f.clus 10 d.r f.size 10 d.r space pad0 type ;
-: ls        ['] (ls) root ;
+: ls        ['] (ls) root cr ;
 
 2variable size
 
@@ -252,10 +256,13 @@ is sector+
     ;
 
 : fplay ( a u )
-    open 0= if
+cr ." fplay " .s
+    open
+cr ." Open: " .s
+    0= if
         size 2@ 512 um/mod
         0 ?do
-            \ cr 512 . i .
+            cr 512 . i .
             sd>s
             has512
             256 0 do

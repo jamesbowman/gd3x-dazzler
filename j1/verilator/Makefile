@@ -3,7 +3,7 @@ SUBDIRS=..
 EXTSUFFIX := $(shell python -c "import sysconfig;print(sysconfig.get_config_var('EXT_SUFFIX'))")
 J1LIB := build/lib/python/vsimj1a$(EXTSUFFIX)
 
-all: ../build/nuc.hex $(J1LIB) # obj_dir/Vj1a
+all: ../build/nuc.hex $(J1LIB) ../build/base.hex ../build/textmode.hex
 
 VERILOGS=j1a.v ../../j1.v ../../stack2.v ../../hdmi.v
 
@@ -20,6 +20,9 @@ obj_dir/Vj1a obj_dir/Vj1a__ALL.a: $(VERILOGS) sim_main.cpp Makefile verilator_ve
 $(J1LIB): setup.py obj_dir/Vj1a__ALL.a vsim.cpp verilator_version.h
 	verilator --version
 	python setup.py install --home build
+
+../build/base.hex ../build/textmode.hex: ../swapforth/boot_*.fs ../../firmware/_textmode.fs
+	python shell.py -p ../ -p ../swapforth/ -p ../swapforth/common -p ../../firmware/ bootstrap.fs
 
 clean:
 	rm -rf build

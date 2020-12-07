@@ -16,6 +16,7 @@ import textmode
 
 __VERSION__ = "1.0.6"
 
+LP = 0x1000 # load point for flash images
 FONTDIR="../../../.fonts/"
 
 def gentext(s):
@@ -120,7 +121,7 @@ def make_menu():
 
     if 1:
         gd.cmd_memwrite(eve.REG_MACRO_0, 4)
-        gd.ClearStencil(0x10 | 0x08 | 2)
+        gd.ClearStencil(0x20 | 0x10 | 0x08 | 2)
 
     if 0:
         gd.cmd_memzero(0x0, 32 * 8)
@@ -130,6 +131,7 @@ def make_menu():
         setlabel(0, b"Dazzler boot 1.1.0")
         setlabel(1, b"Text mode 1.1.0")
         setlabel(2, b"Asteroids")
+        setlabel(7, b"SAYS 7")
 
     gd.setup_1280x720()
 
@@ -215,6 +217,118 @@ def make_menu():
         gd.ClearStencil(i)
     return gd.buf
 
+def make_messagebox():
+    gd = Gameduino()
+
+    if 0:
+        gd.cmd_memzero(0x0, 32 * 8)
+        def setlabel(n, s):
+            gd.cmd_memwrite(32 * n, len(s) + 1)
+            gd.cc(eve.align4(s + bytes([0])))
+        setlabel(0, b"[MESSAGE 123abc]")
+
+    gd.VertexFormat(2)
+    gd.ClearColorRGB(0x20, 0x00, 0x00)
+    gd.Clear()
+
+    gd.cmd_text(640, 240, 31, eve.OPT_CENTER | eve.OPT_FORMAT, "%s", 0)
+
+    s = "Press START to return to the boot menu"
+    gd.cmd_text(640, 480, 31, eve.OPT_CENTER, s)
+
+    gd.swap()
+
+    for i in range(0):
+        for j in range(10):
+            gd.cmd_sync()
+        gd.cmd_memwrite(eve.REG_MACRO_0, 4)
+        gd.ClearStencil(i)
+    return gd.buf
+
+def make_loadscreen():
+    gd = Gameduino()
+
+    gd.cmd_memwrite(eve.REG_MACRO_0, 4)
+    gd.ClearStencil(0)
+
+    gd.cmd_memzero(0, 2**20)
+    if 0:
+        gd.cmd_memset(0, 0x69, 2**20)
+        gd.cmd_memwrite(0, 2**16)
+        import random
+        gd.cc(bytes([random.randrange(0x40, 0x60) for _ in range(2**16)]))
+
+    gd.BitmapHandle(0)
+    gd.cmd_setbitmap(0, eve.RGB565, 256, 128)
+    gd.BitmapSize(eve.NEAREST, eve.BORDER, eve.BORDER, 4 * 256, 4)
+    gd.BitmapSizeH((4 * 256) >> 9, (4) >> 9)
+
+    ld = common.Loader(gd, 2**20-8-16)
+    ld.add = ld.uadd
+    H = 150
+    grid = Image.frombytes("L", (4, 4), bytes([
+        H, H, H, H,
+        H, 0, 0, 0,
+        H, 0, 0, 0,
+        H, 0, 0, 0]))
+    gd.BitmapHandle(1)
+    ld.L8(grid)
+    gd.BitmapSize(eve.NEAREST, eve.REPEAT, eve.REPEAT, 4 * 256, 4 * 128)
+    gd.BitmapSizeH((4 * 256) >> 9, (4 * 128) >> 9)
+
+    gd.BitmapHandle(2)
+    gd.cmd_setbitmap(LP + 4, eve.TEXT8X8, 8 * 32, 8 * 1)
+    gd.BitmapSize(eve.NEAREST, eve.BORDER, eve.BORDER, 512, 16)
+    gd.BitmapSizeH(512 >> 9, 16 >> 9)
+
+    gd.VertexFormat(2)
+    gd.ClearColorRGB(0x20, 0x00, 0x00)
+    gd.Macro(0)
+    gd.Clear()
+    gd.StencilMask(0)
+
+    gd.StencilFunc(eve.EQUAL, 0, 0xff)
+    gd.cmd_text(640, 60, 31, eve.OPT_CENTER, "Unpacking slot image, please wait")
+
+    gd.StencilFunc(eve.EQUAL, 1, 0xff)
+    gd.cmd_text(640, 60, 31, eve.OPT_CENTER, "Writing to flash, please wait")
+
+    gd.StencilFunc(eve.ALWAYS, 1, 0xff)
+
+    gd.Begin(eve.BITMAPS)
+    gd.SaveContext()
+    gd.ColorRGB(200, 255, 200)
+    gd.cmd_scale(2, 2)
+    gd.cmd_setmatrix()
+    gd.BitmapHandle(2)
+    gd.Vertex2f(640 - 256, 120)
+    gd.RestoreContext()
+
+    gd.SaveContext()
+    gd.cmd_loadidentity()
+    gd.cmd_scale(4, 4)
+    gd.cmd_setmatrix()
+    gd.BitmapHandle(0)
+    gd.BlendFunc(1, 0)
+    (x, y) = ((1280 - 1024) / 2, (720 - 512) / 2 + 80)
+    for i in range(128):
+        gd.BitmapSource(LP + 8192 * i)
+        gd.Vertex2f(x, y + 4 * i)
+    gd.RestoreContext()
+
+    gd.BitmapHandle(1)
+    gd.ColorRGB(0, 0, 0)
+    gd.Vertex2f(x, y)
+
+    gd.swap()
+
+    for i in range(0):
+        for j in range(10):
+            gd.cmd_sync()
+        gd.cmd_memwrite(eve.REG_MACRO_0, 4)
+        gd.ClearStencil(i)
+    return gd.buf
+
 def poweron():
     gd = Gameduino()
     gd.setup_1280x720()
@@ -289,7 +403,6 @@ def make_loadflash(fn, fl):
     cd = zlib.compress(fl, 9)
     print('%s: flash image is %d bytes, compresses to %d bytes' % (fn, len(fl), len(cd)))
     assert len(fl) % 256 == 0, len(fl)
-    LP = 0x1000 # load point
     gd = Gameduino()
     gd.cmd_inflate(LP)
     gd.cc(eve.align4(cd))
@@ -369,10 +482,13 @@ def sample(fn):
 if __name__ == "__main__":
     po = poweron()
     me = make_menu()
+    mb = make_messagebox()
+    ld = make_loadscreen()
+    # preview(ld)
 
     # ---------------------------- Base
     make_heavyboot("Dazzler boot (%s)" % __VERSION__,
-                   [po, me],
+                   [po, me, mb, ld],
                    "_loadflash_base.bin")
 
     # ---------------------------- Asteroids
