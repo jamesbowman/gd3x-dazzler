@@ -10,7 +10,4 @@
 #include ../swapforth/boot_textmode.fs
 #flash ../build/textmode.hex
 
-#include ../swapforth/boot_bringup.fs
-#flash ../build/bringup.hex
-
 #bye

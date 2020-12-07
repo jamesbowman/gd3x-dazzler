@@ -1,3 +1,3 @@
 3 slot
-#binclude load _loadflash_textmode.bin
+#binclude load ../../firmware/_loadflash_textmode.bin
 

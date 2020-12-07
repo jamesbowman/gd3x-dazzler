@@ -6,21 +6,13 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageChops
 import bteve as eve
 import zlib
 import wave
-from io import BytesIO
-from itertools import groupby
-from gameduino2.convert import convert
-import random
 import binascii
 def crc(s):     # CRC-32 of string s
     return binascii.crc32(s) & 0xffffffff
 import common
-from spidriver import SPIDriver
 
 sys.path.append("../textmode")
 import textmode
-
-random.seed(7)
-rr = random.randrange
 
 __VERSION__ = "1.0.6"
 
@@ -37,6 +29,8 @@ def gentext(s):
     return im.crop(im.getbbox())
 
 def preview(cmdbuf):
+    from spidriver import SPIDriver
+
     print('preview is', len(cmdbuf), 'bytes')
     d = SPIDriver("/dev/serial/by-id/usb-FTDI_FT230X_Basic_UART_DO02C71A-if00-port0")
     from bteve.gameduino_spidriver import GameduinoSPIDriver
@@ -70,8 +64,6 @@ class Gameduino(eve.Gameduino):
         assert((h_Active + h_Front + h_Sync + h_Back) == h_Total)
         assert((v_Active + v_Front + v_Sync + v_Back) == v_Total)
 
-        # self.cmd_regwrite(eve.REG_ADAPTIVE_FRAMERATE, 0)
-
         self.cmd_regwrite(eve.REG_HCYCLE, h_Total)
         self.cmd_regwrite(eve.REG_HOFFSET, h_Sync + h_Back)
         self.cmd_regwrite(eve.REG_HSIZE, h_Active)
@@ -87,79 +79,35 @@ class Gameduino(eve.Gameduino):
         self.cmd_regwrite(eve.REG_VSYNC1, 0)
         self.cmd_regwrite(eve.REG_VSYNC0, v_Sync)
 
-        if 0:
-            self.cmd_regwrite(eve.REG_TRIM, 23)
-            self.cmd_regwrite(0x302614, 0x8c1)
-
         self.cmd_regwrite(eve.REG_PCLK, 1)
+
     def setup_1280x720(self):
-        if 1:
+        self.Clear()
+        self.swap()
+        setup = [
+            (eve.REG_OUTBITS, 0),
+            (eve.REG_DITHER, 0),
+            (eve.REG_GPIO, 0x83),
+            (eve.REG_CSPREAD, 0),
+            (eve.REG_PCLK_POL, 0),
+            (eve.REG_ADAPTIVE_FRAMERATE, 0),
+        ]
+        for (a, v) in setup:
+            self.cmd_regwrite(a, v)
 
-            self.Clear()
-            self.swap()
-            setup = [
-                (eve.REG_OUTBITS, 0),
-                (eve.REG_DITHER, 0),
-                (eve.REG_GPIO, 0x83),
-                (eve.REG_CSPREAD, 0),
-                (eve.REG_PCLK_POL, 0),
-                (eve.REG_ADAPTIVE_FRAMERATE, 0),
-            ]
-            for (a, v) in setup:
-                self.cmd_regwrite(a, v)
-
-            self.video_signal(
-                h_Active = 1280,
-                h_Front = 110,
-                h_Sync = 40,
-                h_Back = 220,
-                h_Total = 1650,
-                v_Active = 720,
-                v_Front = 5,
-                v_Sync = 5,
-                v_Back = 20,
-                v_Total = 750)
-            self.w = 1280
-            self.h = 720
-            return
-
-    def setup_640_480(self):
-        if 1:
-
-            self.Clear()
-            self.swap()
-            setup = [
-                # (eve.REG_OUTBITS, 0),
-                (eve.REG_DITHER, 0),
-                (eve.REG_GPIO, 0x83),
-                (eve.REG_CSPREAD, 0),
-                (eve.REG_PCLK_POL, 0),
-                (eve.REG_ADAPTIVE_FRAMERATE, 0),
-
-                (eve.REG_HCYCLE, 800),
-                (eve.REG_HOFFSET, 16 + 96),
-                (eve.REG_HSIZE, 640),
-
-                (eve.REG_HSYNC1, 0),
-                (eve.REG_HSYNC0, 96),
-
-                (eve.REG_VCYCLE, 525),
-                (eve.REG_VOFFSET, 12),
-                (eve.REG_VSIZE, 480),
-
-                (eve.REG_VSYNC1, 0),
-                (eve.REG_VSYNC0, 10),
-            ]
-            for (a, v) in setup:
-                self.cmd_regwrite(a, v)
-
-        if 0:
-            self.cmd_regwrite(eve.REG_TRIM, 23)
-            self.cmd_regwrite(0x302614, 0x8c1)
-
-        self.cmd_regwrite(eve.REG_PCLK, 3)
-        self.w = 640
-        self.h = 480
+        self.video_signal(
+            h_Active = 1280,
+            h_Front = 110,
+            h_Sync = 40,
+            h_Back = 220,
+            h_Total = 1650,
+            v_Active = 720,
+            v_Front = 5,
+            v_Sync = 5,
+            v_Back = 20,
+            v_Total = 750)
+        self.w = 1280
+        self.h = 720
 
 # 8-bit display, controlled by ClearStencil:
 #   0-3 slot highlight
@@ -339,7 +287,7 @@ def poweron():
 
 def make_loadflash(fn, fl):
     cd = zlib.compress(fl, 9)
-    print('%s: bitstream is %d bytes, compresses to %d bytes' % (fn, len(fl), len(cd)))
+    print('%s: flash image is %d bytes, compresses to %d bytes' % (fn, len(fl), len(cd)))
     assert len(fl) % 256 == 0, len(fl)
     LP = 0x1000 # load point
     gd = Gameduino()
@@ -351,7 +299,7 @@ def make_loadflash(fn, fl):
     gd.c4(len(fl))
     gd.c4(ecrc)
     gd.cmd_memcrc(LP, len(fl), 0)
-    print('Expected CRC %x' % crc(fl))
+    print('Expected CRC %x' % ecrc)
 
     b = gd.buf
     padw = (-len(b) & 0xff) // 4
@@ -419,14 +367,12 @@ def sample(fn):
         return mono.tobytes()
 
 if __name__ == "__main__":
-    au = sample("assets/bassoon-g4.wav")
-
     po = poweron()
     me = make_menu()
 
     # ---------------------------- Base
     make_heavyboot("Dazzler boot (%s)" % __VERSION__,
-                   [po, me, au],
+                   [po, me],
                    "_loadflash_base.bin")
 
     # ---------------------------- Asteroids
@@ -447,6 +393,9 @@ if __name__ == "__main__":
         "thumphi.wav",
         "thumplo.wav"
     ]
+    def ldwav(fn):
+        return sample("assets/asteroids_samples/" + fn)
+    wavs = [ldwav(fn) for fn in sfx]
 
     ld = common.Loader(gd)
     ld.add = ld.uadd
@@ -459,18 +408,20 @@ if __name__ == "__main__":
 
     make_liteboot("Asteroids",
                   "../j1/build/asteroids.hex",
-                  [gd.buf],
+                  [gd.buf] + wavs,
                   "_loadflash_asteroids.bin")
 
     # ---------------------------- Textmode
     gd = Gameduino()
-    gd.setup_1280x720()
-    t = textmode.Textmode(gd, 'L')
-    t.dump_fs()
+    t = textmode.Textmode(gd)
+    def tm(mode, fontsize):
+        gd.buf = b''
+        gd.setup_1280x720()
+        t.configure(mode, fontsize)
+        return gd.buf
+    modes = [tm(mode, fontsize) for (mode, fontsize) in textmode.tmodes]
 
-    with open("../textmode/textmode.gd2", "rb") as f:
-        textmode_l = f.read()
     make_liteboot("Text mode",
                   "../j1/build/textmode.hex",
-                  [gd.buf],
+                  modes,
                   "_loadflash_textmode.bin")

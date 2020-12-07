@@ -233,3 +233,8 @@ if __name__ == "__main__":
 
     fl = make_flash()
     dump_init("_flash.fs", fl)
+
+    gd = Gameduino()
+    t = textmode.Textmode(gd)
+    [t.configure(mode, fontsize) for (mode, fontsize) in textmode.tmodes]
+    t.dump_fs()

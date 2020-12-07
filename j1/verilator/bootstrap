@@ -1,4 +1,4 @@
 set -e
 make
 
-python shell.py -p ../ -p ../swapforth/ -p ../swapforth/common bootstrap.fs
+python shell.py -p ../ -p ../swapforth/ -p ../swapforth/common -p ../../firmware/ bootstrap.fs

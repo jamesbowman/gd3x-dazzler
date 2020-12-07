@@ -8,7 +8,13 @@ CSPI
 
 defer getc
 
-#include ../../textmode/_textmode.fs
+variable mode 0 mode !
+
+: mconstant
+    create
+    does>   mode @ cells + @ ;
+
+#include _textmode.fs
 #include ../../textmode/textmode2.fs
 
 : terminal
@@ -26,14 +32,10 @@ defer getc
 
 : /t
     0 mux0
-    CSPI idle sack
-    REG_ID eve@ $7c <> if
-        /eve-spi
-    then
-    0 playstream
+    eve-start
     /eve-qpi
-    stream
-    0. cy 2!
+    REG_ID eve@ cr .x
+    0 setmode
     ;
 
 6000 constant BLINK         \ blink timer, higher is slower

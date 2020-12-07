@@ -1,3 +1,9 @@
+P=/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AE01COQ7-if00-port0  # orange label
+
 P=/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A900XR7J-if00-port0  # proto 02
 P=/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A900XSSH-if00-port0  # proto 01
-python shell.py -h $P -p common bringup.fs # safeload.fs
+setserial $P low_latency
+B=boot_base
+B=boot_bringup
+B=boot_textmode
+python shell.py -h $P -p common -p ../../firmware $B.fs # safeload.fs
