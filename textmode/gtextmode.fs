@@ -4,6 +4,10 @@ warnings off
 next-arg r/o bin open-file drop constant ans
 s" out" w/o bin create-file drop constant out
 
+: playstream drop ; : stream ;
+$00302070. 2constant REG_PCLK 
+variable mode
+
 create c 1 allot
 : getc
     c 1 ans read-file throw
@@ -25,6 +29,10 @@ create spot 4 allot
 : w>gd
     dup 65535 > throw
     0 >spid ;
+
+: mconstant
+    create
+    does>   @ ;
 
 include _textmode.fs
 include textmode2.fs

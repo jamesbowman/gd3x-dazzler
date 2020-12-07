@@ -8,6 +8,7 @@ import random
 rr = random.randrange
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageChops
 import json
+from collections import defaultdict
 
 from spidriver import SPIDriver
 
@@ -27,8 +28,12 @@ colorblk = array.array('H',
             c256).tobytes()
 
 class Textmode:
-    def __init__(self, gd, mode = 'P'):
+    def __init__(self, gd):
+        self.gd = gd
+        self.configs = defaultdict(list)
 
+    def configure(self, mode = 'P', fontsize = 14):
+        gd = self.gd
         if mode == 'L':
             gd.cmd_setrotate(0)
             (sw, sh) = (1280, 720)
@@ -36,7 +41,7 @@ class Textmode:
             gd.cmd_setrotate(2)
             (sw, sh) = (720, 1280)
 
-        font = ImageFont.truetype("../../../.fonts/IBMPlexMono-Medium.otf", 14)
+        font = ImageFont.truetype("../../../.fonts/IBMPlexMono-Medium.otf", fontsize)
         ch = [chr(i) for i in range(32, 255)]
 
         im = Image.new("L", (256, 256))
@@ -212,6 +217,8 @@ class Textmode:
         self.colors = (7, 0)
         self.yo = 0
 
+        self.append_config()
+
     def gaddr(self, x, y):
         return self.fb + x * (self.w2 * self.h) + y * (self.w2 * self.h * self.W)
 
@@ -229,20 +236,30 @@ class Textmode:
         gd.cmd_memcpy(a + self.cz, BG, 2)
 
 
+    def append_config(self):
+        fb = self.gaddr(0, 0)
+        cfgs = [
+            ("W", self.W),
+            ("H", self.H),
+            ("fm", self.fm),
+            ("scr", self.scrollblk),
+            ("ca", self.caddr(0, 0, 0)),
+            ("ca1", (2 * self.W * self.H)),
+            ("fb", fb),
+            ("g", (self.w2 * self.h)),
+            ("w2", self.w2),
+            ("h2", self.h2),
+            ("curh", self.curh)
+        ]
+        for (nm, v) in cfgs:
+            self.configs[nm].append(v)
+        
     def dump_fs(self):
         with open("_textmode.fs", "wt") as f:
-            f.write("%d constant t.fm\n" % self.fm)
-            f.write("%d constant t.scr\n" % self.scrollblk)
-            f.write("%d constant t.ca\n" % self.caddr(0, 0, 0))
-            f.write("%d constant t.ca1\n" % (2 * self.W * self.H))
-            fb = self.gaddr(0, 0)
-            f.write("%d constant t.fb\n" % fb)
-            f.write("%d constant t.g\n" % (self.w2 * self.h))
-            f.write("%d constant t.W\n" % self.W)
-            f.write("%d constant t.H\n" % self.H)
-            f.write("%d constant t.w2\n" % self.w2)
-            f.write("%d constant t.h2\n" % self.h2)
-            f.write("%d constant t.curh\n" % self.curh)
+            for (nm, vv) in self.configs.items():
+                f.write("mconstant t.%-4s " % nm)
+                f.write(" ".join(["%5d ," % v for v in vv]))
+                f.write("\n")
 
     def clr(self, p0, p1):
         for z in (0,1):
@@ -377,6 +394,8 @@ class Textmode:
                 cy -= 1
                 self.clr((0, cy), (self.W, cy))
                 gd.cmd_memcpy(eve.REG_MACRO_0, self.scrollblk + 4 * self.yo, 4)
+
+tmodes = [('L', 14), ('L', 10), ('P', 13), ('P', 10)]
 
 if __name__ == "__main__":
     gd = eve.GameduinoSPIDriver(SPIDriver(sys.argv[1]))

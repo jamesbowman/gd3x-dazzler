@@ -19,7 +19,9 @@ class Recorder(eve.Gameduino):
 
 if __name__ == "__main__":
     gd = Recorder()
-    t = textmode.Textmode(gd, 'L')
+    t = textmode.Textmode(gd)
+    t.configure('L', 14)
+    t.dump_fs()
     gd.pb = b''
 
     fn = sys.argv[1]

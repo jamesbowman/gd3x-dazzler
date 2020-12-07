@@ -8,6 +8,11 @@
 : cmd_memwrite \ dst n
     $1a cmd ;
 
+: regwrite ( a. )
+    cmd_memwrite
+    >gd
+    4 w>gd ;
+
 2variable cy                    \ so "cy 2@" is ( x y )
 cy cell+ constant cx
 0. cy 2!
@@ -16,6 +21,14 @@ variable yo 0 yo !
 2variable colors            7. colors 2!
 create argv 10 cells allot
 variable pa
+
+: setmode
+    dup mode !
+    playstream
+    stream
+    0. cy 2!
+    0 yo !
+    ;
 
 : arg  ( -- a ) pa @ @ 1 cells pa +! ;
 \ Missing args are -1
@@ -157,6 +170,14 @@ variable pa
         2 of 0 t.W           lineclr endof
         endcase
     endof
+    'S' of
+        arg 0 max 1 min
+        REG_PCLK regwrite w>gd
+    endof
+    'h' of
+        arg 0 max 3 min
+        setmode
+    endof
     's' of cy 2@ csave 2! endof
     'u' of csave 2@ cy 2! endof
 
@@ -214,10 +235,7 @@ variable pa
     >gd ;
 
 : macro1
-    cmd_memwrite
-    $3020dc. >gd
-    4 w>gd
-    ;
+    $3020dc. regwrite ;
 
 : showcursor
     macro1
