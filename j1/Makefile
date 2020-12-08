@@ -1,4 +1,4 @@
-build/nuc.hex: cross.fs basewords.fs nuc.fs
+build/nuc.hex: cross.fs basewords.fs nuc.fs  build/stamp.fs
 	mkdir -p build
 	gforth cross.fs basewords.fs nuc.fs
 

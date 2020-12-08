@@ -32,6 +32,7 @@ variable s_ 0 s_ !
     wiistate + c@ and 0= ;
 
 : dialog ( a u )
+    CSPI
     0. eve! >>eve 0 >spi
     2 playstream
     begin
@@ -39,24 +40,42 @@ variable s_ 0 s_ !
     until
     ;
 
-: loadsd ( s )
-    3 playstream
+: sd-det
+    $16 io@ 0< invert ;
+
+: image.dazzler s" image.dazzler" ;
+
+defer failmsg
+
+: (loadsd) ( s failmsg )
+    is failmsg
+    dup 0 8 within invert if
+        s" Slot number must be 0-7" failmsg exit
+    then
+    sd-det 0= if
+        s" No microSD card inserted" failmsg exit
+    then
     /fat32
     ls
-    s" image.dazzler" fplay
+    image.dazzler open if
+        s" Cannot find file 'image.dazzler'" failmsg exit
+    then
+    3 playstream
+    image.dazzler fplay
     CSPI
     dup 0= if
         $1024. eve@ $5a61 = if
-            s" Slot 0 must a full boot image" dialog drop exit
+            s" Slot 0 must a full boot image" failmsg drop exit
         then
     then
     slot flashoff 2!
     1 display
-    \ (loadbin)
+    (loadbin)
     ;
 
 : bootloop
     ['] chars is menu
+    ['] dialog is failmsg
     0 mux0
     eve-start
     CSPI
@@ -69,13 +88,14 @@ variable s_ 0 s_ !
         dup if cr .s then
         case
         $1000 of run endof
-        $0800 of loadsd exit endof
+        $0800 of ['] dialog (loadsd) exit endof
         $0040 of 1+ endof
         $0100 of 1- endof
         endcase
 
         p2 det $20 and or
         p1 det $10 and or
+        sd-det $08 and or
         dup display
         $7 and
 
@@ -97,8 +117,10 @@ variable s_ 0 s_ !
         1 =
     loop
     ;
-
 :noname
+    general5 $DA22 = if
+        eve-start loadbin begin again
+    then
     ['] bootmenu is menu            \ START+X+Y brings up the bootmenu
     wii-poll
     200 ms key? if                  \ Keypress in 200 ms, drop to prompt
@@ -116,6 +138,18 @@ variable s_ 0 s_ !
     wii-main                        \ wii port loop, never returns
 ; init !
 
-: x
-    begin cr $16 io@ .x $17 io@ .x again ;
+\ --------------------------------------------- command-line
 
+: loadsd ( u )  \ load SD slot u from microSD image.dazzler
+    0 mux0 cspi
+    ['] type (loadsd)
+    ;
+
+: zslot ( u )   \ erase slot u
+    dup 0= if drop ." Not erasing slot 0" exit then
+    slot
+    DSPI
+    $d8 wcmd addro notbusy
+    ;
+
+' loadsd is serv-load               \ Allow SPI slot loading

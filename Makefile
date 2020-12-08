@@ -4,5 +4,5 @@ _loadflash_base.bin:
 	make -C firmware stage1
 	make -C j1
 	make -C j1/verilator
-	# make -f dazzler.Makefile
+	./xilinxmake
 	make -C firmware stage2

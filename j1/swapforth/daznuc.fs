@@ -272,6 +272,8 @@ $25f0 reg REG_FLASH_STATUS
 : sack
     $00 $600 io! ;
 
+defer serv-load ' drop is serv-load
+
 : service
     $600 io@ if
         $601 io@
@@ -280,6 +282,7 @@ cr ." CMD:" dup .x
         case
         $40 of eve-start drop endof
         $41 of sack run endof
+        $42 of serv-load endof
         drop
         endcase
         sack

@@ -95,10 +95,10 @@ create wiistate 6 cells allot
     ;
 : wii-commit
     wiistate
-cr
+\ cr
     10 4 do
         dup @
-dup .x
+\ dup .x
         i io!
         cell+
     loop

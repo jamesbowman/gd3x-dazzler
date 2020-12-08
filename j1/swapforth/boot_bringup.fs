@@ -344,9 +344,6 @@ create cmd.flash
     2dup type
     evaluate ;
 
-: general5
-    $17 icap@ ;
-
 : sep space '|' emit space ;
 
 : cold

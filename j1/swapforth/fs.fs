@@ -256,6 +256,7 @@ is sector+
     ;
 
 : fplay ( a u )
+    ESPI
 cr ." fplay " .s
     open
 cr ." Open: " .s
