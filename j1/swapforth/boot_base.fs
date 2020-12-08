@@ -76,8 +76,6 @@ defer failmsg
 : bootloop
     ['] chars is menu
     ['] dialog is failmsg
-    0 mux0
-    eve-start
     CSPI
     slotnames
     1 playstream
@@ -104,7 +102,11 @@ defer failmsg
     again
 ;
 
-: bootmenu begin bootloop again ;
+: bootmenu
+    0 mux0
+    eve-start
+    begin bootloop again
+    ;
 
 : /sd-present
     ESPI /spi/
