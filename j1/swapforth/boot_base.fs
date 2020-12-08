@@ -117,7 +117,16 @@ defer failmsg
         1 =
     loop
     ;
+
+: sep space '|' emit space ;
+
 :noname
+    ." boot_base"               sep
+    ." slot " origin .          sep
+    dna type                    sep
+    stamp type                  sep
+    ." GENERAL5=" general5 .x   sep
+
     general5 $DA22 = if
         eve-start loadbin begin again
     then
