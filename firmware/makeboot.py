@@ -433,11 +433,11 @@ with open("../dazzler.bit", "rb") as f:
     dazzler_bit = f.read()[96:]
     desync = bytes([0x30, 0xa1, 0x00, 0x0d])
     set_general5 = bytes([0x32, 0xe1, 0xda, 0x22])
-    dazzler_bit = dazzler_bit.replace(desync, desync + set_general5)
+    dazzler_bit_da22 = dazzler_bit.replace(desync, desync + set_general5)
 
 with open("_jtagboot.h", "wt") as f:
-    for i in range(0, len(dazzler_bit), 100):
-        f.write("".join(["%d,"%b for b in dazzler_bit[i:i + 100]]) + "\n")
+    for i in range(0, len(dazzler_bit_da22), 100):
+        f.write("".join(["%d,"%b for b in dazzler_bit_da22[i:i + 100]]) + "\n")
 
 def make_heavyboot(title, streams, binfile):
     fl = bootheader(title) + dazzler_bit

@@ -86,3 +86,7 @@
     $23 $00 do
         cr i .x2 i icap@ .x
     loop ;
+
+: general5
+    $17 icap@ ;
+

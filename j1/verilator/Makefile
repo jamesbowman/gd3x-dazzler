@@ -21,7 +21,7 @@ $(J1LIB): setup.py obj_dir/Vj1a__ALL.a vsim.cpp verilator_version.h
 	verilator --version
 	python setup.py install --home build
 
-../build/base.hex ../build/textmode.hex: ../swapforth/boot_*.fs ../../firmware/_textmode.fs
+../build/base.hex ../build/textmode.hex: ../swapforth/*.fs ../../firmware/_textmode.fs
 	python shell.py -p ../ -p ../swapforth/ -p ../swapforth/common -p ../../firmware/ bootstrap.fs
 
 clean:
