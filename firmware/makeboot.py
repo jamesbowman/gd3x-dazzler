@@ -429,15 +429,24 @@ def bootheader(s):
         bytes([0xda,0x22,0x1e,0x55]) +
         (s.encode('utf-8') + b"\x00").ljust(32, b'\xff'))
 
-with open("../dazzler.bit", "rb") as f:
-    dazzler_bit = f.read()[96:]
+def set_da22(fl):
     desync = bytes([0x30, 0xa1, 0x00, 0x0d])
     set_general5 = bytes([0x32, 0xe1, 0xda, 0x22])
-    dazzler_bit_da22 = dazzler_bit.replace(desync, desync + set_general5)
+    return fl.replace(desync, set_general5 + desync)
+
+with open("../dazzler.bit", "rb") as f:
+    bitfile = f.read()
+
+bitfile_da22 = set_da22(bitfile)
+open("../dazzler-da22.bit", "wb").write(bitfile_da22)
+bit_da22 = bitfile_da22[96:]
+
+dazzler_bit = bitfile[96:]
+# dazzler_bit = dazzler_bit.replace(desync, set_general5 + desync)
 
 with open("_jtagboot.h", "wt") as f:
-    for i in range(0, len(dazzler_bit_da22), 100):
-        f.write("".join(["%d,"%b for b in dazzler_bit_da22[i:i + 100]]) + "\n")
+    for i in range(0, len(bit_da22), 100):
+        f.write("".join(["%d,"%b for b in bit_da22[i:i + 100]]) + "\n")
 
 def make_heavyboot(title, streams, binfile):
     fl = bootheader(title) + dazzler_bit

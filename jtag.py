@@ -121,7 +121,7 @@ class JTAG(spidriver.SPIDriver):
         self.go_state(1, 0, 0)
         self.in_state("Shift-DR")
     
-        bit = open("dazzler.bit", "rb").read()[0x60:]
+        bit = open(sys.argv[1], "rb").read()[0x60:]
         w = 64
         t0 = time.time()
         for i in range(0, len(bit), w):
