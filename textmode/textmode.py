@@ -39,7 +39,7 @@ class Textmode:
             gd.cmd_setrotate(2)
             (sw, sh) = (720, 1280)
 
-        font = ImageFont.truetype("../../../.fonts/IBMPlexMono-Medium.otf", fontsize)
+        font = ImageFont.truetype("../fonts/IBMPlexMono-Medium.otf", fontsize)
         ch = [chr(i) for i in range(32, 255)]
 
         im = Image.new("L", (256, 256))
