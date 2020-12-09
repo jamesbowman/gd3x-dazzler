@@ -1,7 +1,9 @@
 set -e
+make -C firmware stage1
+make -C j1
+make -C j1/verilator
+
 cd j1/verilator
-make -C ..
-make
 python shell.py -p ../ -p ../swapforth/common -p ../swapforth/anstests  -p ../swapforth swapforth.fs \
 ../runtests.fs << EOT
 #bye

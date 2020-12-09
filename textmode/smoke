@@ -1,0 +1,11 @@
+set -e
+
+for F in `cat passlist`
+do
+  echo "---------------" $F
+  python reference.py $F
+  gforth gtextmode.fs $F
+  # hd out
+  diff $F.ref out ||
+  ( python cmp.py $F.ref out ; false )
+done
