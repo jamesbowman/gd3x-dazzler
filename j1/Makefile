@@ -7,6 +7,7 @@ build/bringup.hex: build/nuc.hex verilator/bootstrap swapforth.fs swapforth/*.fs
 	(cd ./verilator/; ./bootstrap)
 
 build/stamp.fs:
+	mkdir -p build
 	python mkstamp.py build/stamp.fs
 
 clean:
