@@ -14,7 +14,7 @@ import common
 sys.path.append("../textmode")
 import textmode
 
-__VERSION__ = "1.0.6"
+__VERSION__ = "1.1.0"
 
 LP = 0x1000 # load point for flash images
 FONTDIR="../../../.fonts/"
