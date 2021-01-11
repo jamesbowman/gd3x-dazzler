@@ -59,168 +59,179 @@
 </layers>
 <library>
 <packages>
-<package name="DAZZLER-SOCKET">
-<wire x1="-24.13" y1="-20.32" x2="25.87" y2="-20.32" width="0.127" layer="21"/>
-<wire x1="25.87" y1="-20.32" x2="25.87" y2="21.68" width="0.127" layer="21"/>
-<wire x1="25.87" y1="21.68" x2="-24.13" y2="21.68" width="0.127" layer="21"/>
-<wire x1="-24.13" y1="21.68" x2="-24.13" y2="-20.32" width="0.127" layer="21"/>
-<pad name="P$1" x="9.87" y="21.68" drill="0.8"/>
-<pad name="P$2" x="7.87" y="21.68" drill="0.8"/>
-<pad name="P$3" x="5.87" y="21.68" drill="0.8"/>
-<pad name="P$4" x="3.87" y="21.68" drill="0.8"/>
-<pad name="P$5" x="1.87" y="21.68" drill="0.8"/>
-<pad name="P$6" x="-0.13" y="21.68" drill="0.8"/>
-<pad name="P$7" x="-2.13" y="21.68" drill="0.8"/>
-<pad name="P$8" x="-4.13" y="21.68" drill="0.8"/>
-<pad name="P$9" x="-6.13" y="21.68" drill="0.8"/>
-<pad name="P$10" x="-8.13" y="21.68" drill="0.8"/>
-<pad name="P$11" x="-10.13" y="21.68" drill="0.8"/>
-<pad name="P$12" x="-12.13" y="21.68" drill="0.8"/>
-<pad name="P$13" x="-14.13" y="21.68" drill="0.8"/>
-<pad name="P$14" x="-16.13" y="21.68" drill="0.8"/>
-<pad name="P$15" x="-18.13" y="21.68" drill="0.8"/>
-<hole x="-21.33" y="18.88" drill="2.5"/>
-<pad name="P$16" x="-24.13" y="15.68" drill="0.8"/>
-<pad name="P$17" x="-24.13" y="13.68" drill="0.8"/>
-<pad name="P$18" x="-24.13" y="11.68" drill="0.8"/>
-<pad name="P$19" x="-24.13" y="9.68" drill="0.8"/>
-<pad name="P$20" x="-24.13" y="7.68" drill="0.8"/>
-<pad name="P$21" x="-24.13" y="5.68" drill="0.8"/>
-<pad name="P$22" x="-24.13" y="3.68" drill="0.8"/>
-<pad name="P$23" x="-24.13" y="1.68" drill="0.8"/>
-<pad name="P$24" x="-24.13" y="-0.32" drill="0.8"/>
-<pad name="P$25" x="-24.13" y="-2.32" drill="0.8"/>
-<pad name="P$26" x="-24.13" y="-4.32" drill="0.8"/>
-<pad name="P$27" x="-24.13" y="-6.32" drill="0.8"/>
-<pad name="P$28" x="-24.13" y="-8.32" drill="0.8"/>
-<pad name="P$29" x="-24.13" y="-10.32" drill="0.8"/>
-<pad name="P$30" x="-24.13" y="-12.32" drill="0.8"/>
-<pad name="P$31" x="-24.13" y="-14.32" drill="0.8"/>
-<hole x="-21.33" y="-17.52" drill="2.5"/>
-<pad name="P$32" x="-16.13" y="-20.32" drill="0.8"/>
-<pad name="P$33" x="-14.13" y="-20.32" drill="0.8"/>
-<pad name="P$34" x="-12.13" y="-20.32" drill="0.8"/>
-<pad name="P$35" x="-10.13" y="-20.32" drill="0.8"/>
-<pad name="P$36" x="-8.13" y="-20.32" drill="0.8"/>
-<pad name="P$37" x="-4.13" y="-20.32" drill="0.8"/>
-<pad name="P$38" x="-2.13" y="-20.32" drill="0.8"/>
-<pad name="P$39" x="-0.13" y="-20.32" drill="0.8"/>
-<pad name="P$40" x="1.87" y="-20.32" drill="0.8"/>
-<pad name="P$41" x="5.87" y="-20.32" drill="0.8"/>
-<pad name="P$42" x="7.87" y="-20.32" drill="0.8"/>
-<pad name="P$43" x="9.87" y="-20.32" drill="0.8"/>
-<hole x="23.07" y="-17.52" drill="2.5"/>
-<circle x="-21.33" y="18.88" radius="2.5" width="0.127" layer="21"/>
-<circle x="-21.33" y="-17.52" radius="2.5" width="0.127" layer="21"/>
-<circle x="23.07" y="-17.52" radius="2.5" width="0.127" layer="21"/>
-<wire x1="26.87" y1="20.68" x2="26.87" y2="4.68" width="0.127" layer="21"/>
-<wire x1="26.87" y1="4.68" x2="15.87" y2="4.68" width="0.127" layer="21"/>
-<wire x1="15.87" y1="4.68" x2="15.87" y2="20.68" width="0.127" layer="21"/>
-<wire x1="15.87" y1="20.68" x2="26.87" y2="20.68" width="0.127" layer="21"/>
-</package>
 <package name="DAZZLER-PAD">
-<wire x1="-25.4" y1="-20.32" x2="24.6" y2="-20.32" width="0.127" layer="21"/>
-<wire x1="24.6" y1="-20.32" x2="24.6" y2="21.68" width="0.127" layer="21"/>
-<wire x1="24.6" y1="21.68" x2="-25.4" y2="21.68" width="0.127" layer="21"/>
-<wire x1="-25.4" y1="21.68" x2="-25.4" y2="-20.32" width="0.127" layer="21"/>
-<hole x="-22.6" y="18.88" drill="2.5"/>
-<hole x="-22.6" y="-17.52" drill="2.5"/>
-<hole x="21.8" y="-17.52" drill="2.5"/>
-<circle x="-22.6" y="18.88" radius="2.5" width="0.127" layer="21"/>
-<circle x="-22.6" y="-17.52" radius="2.5" width="0.127" layer="21"/>
-<circle x="21.8" y="-17.52" radius="2.5" width="0.127" layer="21"/>
-<wire x1="25.6" y1="20.68" x2="25.6" y2="4.68" width="0.127" layer="21"/>
-<wire x1="25.6" y1="4.68" x2="14.6" y2="4.68" width="0.127" layer="21"/>
-<wire x1="14.6" y1="4.68" x2="14.6" y2="20.68" width="0.127" layer="21"/>
-<wire x1="14.6" y1="20.68" x2="25.6" y2="20.68" width="0.127" layer="21"/>
-<smd name="P$1" x="8.6" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$2" x="6.6" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$3" x="4.6" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$4" x="2.6" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$5" x="0.6" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$6" x="-1.4" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$7" x="-3.4" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$8" x="-5.4" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$9" x="-7.4" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$10" x="-9.4" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$11" x="-11.4" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$12" x="-13.4" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$13" x="-15.4" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$14" x="-17.4" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$15" x="-19.4" y="21.68" dx="1" dy="1" layer="1"/>
-<smd name="P$16" x="-25.4" y="15.68" dx="1" dy="1" layer="1"/>
-<smd name="P$17" x="-25.4" y="13.68" dx="1" dy="1" layer="1"/>
-<smd name="P$18" x="-25.4" y="11.68" dx="1" dy="1" layer="1"/>
-<smd name="P$19" x="-25.4" y="9.68" dx="1" dy="1" layer="1"/>
-<smd name="P$20" x="-25.4" y="7.68" dx="1" dy="1" layer="1"/>
-<smd name="P$21" x="-25.4" y="5.68" dx="1" dy="1" layer="1"/>
-<smd name="P$22" x="-25.4" y="3.68" dx="1" dy="1" layer="1"/>
-<smd name="P$23" x="-25.4" y="1.68" dx="1" dy="1" layer="1"/>
-<smd name="P$24" x="-25.4" y="-0.32" dx="1" dy="1" layer="1"/>
-<smd name="P$25" x="-25.4" y="-2.32" dx="1" dy="1" layer="1"/>
-<smd name="P$26" x="-25.4" y="-4.32" dx="1" dy="1" layer="1"/>
-<smd name="P$27" x="-25.4" y="-6.32" dx="1" dy="1" layer="1"/>
-<smd name="P$28" x="-25.4" y="-8.32" dx="1" dy="1" layer="1"/>
-<smd name="P$29" x="-25.4" y="-10.32" dx="1" dy="1" layer="1"/>
-<smd name="P$30" x="-25.4" y="-12.32" dx="1" dy="1" layer="1"/>
-<smd name="P$31" x="-25.4" y="-14.32" dx="1" dy="1" layer="1"/>
-<smd name="P$32" x="-17.4" y="-20.32" dx="1" dy="1" layer="1"/>
-<smd name="P$33" x="-15.4" y="-20.32" dx="1" dy="1" layer="1"/>
-<smd name="P$34" x="-13.4" y="-20.32" dx="1" dy="1" layer="1"/>
-<smd name="P$35" x="-11.4" y="-20.32" dx="1" dy="1" layer="1"/>
-<smd name="P$36" x="-9.4" y="-20.32" dx="1" dy="1" layer="1"/>
-<smd name="P$37" x="-5.4" y="-20.32" dx="1" dy="1" layer="1"/>
-<smd name="P$38" x="-3.4" y="-20.32" dx="1" dy="1" layer="1"/>
-<smd name="P$39" x="-1.4" y="-20.32" dx="1" dy="1" layer="1"/>
-<smd name="P$40" x="0.6" y="-20.32" dx="1" dy="1" layer="1"/>
-<smd name="P$41" x="4.6" y="-20.32" dx="1" dy="1" layer="1"/>
-<smd name="P$42" x="6.6" y="-20.32" dx="1" dy="1" layer="1"/>
-<smd name="P$43" x="8.6" y="-20.32" dx="1" dy="1" layer="1"/>
+<wire x1="-25" y1="-21" x2="25" y2="-21" width="0.127" layer="21"/>
+<wire x1="25" y1="-21" x2="25" y2="21" width="0.127" layer="21"/>
+<wire x1="25" y1="21" x2="-25" y2="21" width="0.127" layer="21"/>
+<wire x1="-25" y1="21" x2="-25" y2="-21" width="0.127" layer="21"/>
+<hole x="-22.2" y="18.2" drill="2.5"/>
+<hole x="-22.2" y="-18.2" drill="2.5"/>
+<hole x="22.2" y="-18.2" drill="2.5"/>
+<circle x="-22.2" y="18.2" radius="2.5" width="0.127" layer="21"/>
+<circle x="-22.2" y="-18.2" radius="2.5" width="0.127" layer="21"/>
+<circle x="22.2" y="-18.2" radius="2.5" width="0.127" layer="21"/>
+<wire x1="25.998578125" y1="20.20571875" x2="25.998578125" y2="4.70571875" width="0.127" layer="21"/>
+<wire x1="25.998578125" y1="4.70571875" x2="14.998578125" y2="4.70571875" width="0.127" layer="21"/>
+<wire x1="14.998578125" y1="4.70571875" x2="14.998578125" y2="20.20571875" width="0.127" layer="21"/>
+<wire x1="14.998578125" y1="20.20571875" x2="25.998578125" y2="20.20571875" width="0.127" layer="21"/>
+<smd name="P$1" x="9" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$2" x="7" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$3" x="5" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$4" x="3" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$5" x="1" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$6" x="-1" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$7" x="-3" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$8" x="-5" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$9" x="-7" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$10" x="-9" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$11" x="-11" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$12" x="-13" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$13" x="-15" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$14" x="-17" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$15" x="-19" y="21" dx="1" dy="1" layer="1"/>
+<smd name="P$16" x="-25" y="15" dx="1" dy="1" layer="1"/>
+<smd name="P$17" x="-25" y="13" dx="1" dy="1" layer="1"/>
+<smd name="P$18" x="-25" y="11" dx="1" dy="1" layer="1"/>
+<smd name="P$19" x="-25" y="9" dx="1" dy="1" layer="1"/>
+<smd name="P$20" x="-25" y="7" dx="1" dy="1" layer="1"/>
+<smd name="P$21" x="-25" y="5" dx="1" dy="1" layer="1"/>
+<smd name="P$22" x="-25" y="3" dx="1" dy="1" layer="1"/>
+<smd name="P$23" x="-25" y="1" dx="1" dy="1" layer="1"/>
+<smd name="P$24" x="-25" y="-1" dx="1" dy="1" layer="1"/>
+<smd name="P$25" x="-25" y="-3" dx="1" dy="1" layer="1"/>
+<smd name="P$26" x="-25" y="-5" dx="1" dy="1" layer="1"/>
+<smd name="P$27" x="-25" y="-7" dx="1" dy="1" layer="1"/>
+<smd name="P$28" x="-25" y="-9" dx="1" dy="1" layer="1"/>
+<smd name="P$29" x="-25" y="-11" dx="1" dy="1" layer="1"/>
+<smd name="P$30" x="-25" y="-13" dx="1" dy="1" layer="1"/>
+<smd name="P$31" x="-25" y="-15" dx="1" dy="1" layer="1"/>
+<smd name="P$32" x="-17" y="-21" dx="1" dy="1" layer="1"/>
+<smd name="P$33" x="-15" y="-21" dx="1" dy="1" layer="1"/>
+<smd name="P$34" x="-13" y="-21" dx="1" dy="1" layer="1"/>
+<smd name="P$35" x="-11" y="-21" dx="1" dy="1" layer="1"/>
+<smd name="P$36" x="-9" y="-21" dx="1" dy="1" layer="1"/>
+<smd name="P$37" x="-5" y="-21" dx="1" dy="1" layer="1"/>
+<smd name="P$38" x="-3" y="-21" dx="1" dy="1" layer="1"/>
+<smd name="P$39" x="-1" y="-21" dx="1" dy="1" layer="1"/>
+<smd name="P$40" x="1" y="-21" dx="1" dy="1" layer="1"/>
+<smd name="P$41" x="5" y="-21" dx="1" dy="1" layer="1"/>
+<smd name="P$42" x="7" y="-21" dx="1" dy="1" layer="1"/>
+<smd name="P$43" x="9" y="-21" dx="1" dy="1" layer="1"/>
+<hole x="15.41" y="19.75" drill="2.4"/>
+<hole x="15.41" y="5.25" drill="2.4"/>
+<hole x="21.37" y="19.75" drill="1.4"/>
+<hole x="21.37" y="5.25" drill="1.4"/>
 </package>
 </packages>
 <symbols>
-<symbol name="DAZZLER-6850">
-<wire x1="-22.86" y1="48.26" x2="22.86" y2="48.26" width="0.254" layer="97"/>
-<wire x1="22.86" y1="48.26" x2="22.86" y2="-48.26" width="0.254" layer="97"/>
-<wire x1="22.86" y1="-48.26" x2="-22.86" y2="-48.26" width="0.254" layer="97"/>
-<wire x1="-22.86" y1="-48.26" x2="-22.86" y2="48.26" width="0.254" layer="97"/>
-<pin name="GND.1" x="-5.08" y="-53.34" length="middle" rot="R90"/>
-<pin name="RXDATA" x="-27.94" y="7.62" length="middle"/>
-<pin name="RXCLK" x="-27.94" y="2.54" length="middle"/>
-<pin name="TXCLK" x="-27.94" y="-2.54" length="middle"/>
-<pin name="RTS" x="-27.94" y="-7.62" length="middle"/>
-<pin name="TXDATA" x="-27.94" y="-12.7" length="middle"/>
-<pin name="IRQ" x="-27.94" y="-17.78" length="middle"/>
-<pin name="CS0" x="-27.94" y="-22.86" length="middle"/>
-<pin name="CS2" x="-27.94" y="-27.94" length="middle"/>
-<pin name="CS1" x="-27.94" y="-33.02" length="middle"/>
-<pin name="RS" x="-27.94" y="-38.1" length="middle"/>
-<pin name="5V" x="-27.94" y="33.02" length="middle"/>
-<pin name="R/W" x="27.94" y="-43.18" length="middle" rot="R180"/>
-<pin name="E" x="27.94" y="-38.1" length="middle" rot="R180"/>
-<pin name="D7" x="27.94" y="-33.02" length="middle" rot="R180"/>
-<pin name="D6" x="27.94" y="-27.94" length="middle" rot="R180"/>
-<pin name="D5" x="27.94" y="-22.86" length="middle" rot="R180"/>
-<pin name="D4" x="27.94" y="-17.78" length="middle" rot="R180"/>
-<pin name="D3" x="27.94" y="-12.7" length="middle" rot="R180"/>
-<pin name="D2" x="27.94" y="-7.62" length="middle" rot="R180"/>
-<pin name="D1" x="27.94" y="-2.54" length="middle" rot="R180"/>
-<pin name="D0" x="27.94" y="2.54" length="middle" rot="R180"/>
-<pin name="DCD" x="27.94" y="7.62" length="middle" rot="R180"/>
-<pin name="CTS" x="27.94" y="12.7" length="middle" rot="R180"/>
-<pin name="CS5" x="27.94" y="22.86" length="middle" rot="R180"/>
-<pin name="CS4" x="27.94" y="27.94" length="middle" rot="R180"/>
-<pin name="CS3" x="27.94" y="33.02" length="middle" rot="R180"/>
-<pin name="BUS-DIR" x="27.94" y="38.1" length="middle" rot="R180"/>
-<pin name="KBD-IN" x="27.94" y="43.18" length="middle" rot="R180"/>
-<pin name="CONSOLE-IN" x="-27.94" y="43.18" length="middle"/>
-<pin name="CONSOLE-OUT" x="-27.94" y="38.1" length="middle"/>
-<pin name="3.3V" x="-27.94" y="27.94" length="middle"/>
-<pin name="GND.2" x="0" y="-53.34" length="middle" rot="R90"/>
-<pin name="GND.3" x="5.08" y="-53.34" length="middle" rot="R90"/>
+<symbol name="DAZZLER">
+<pin name="P1" x="-25.4" y="40.64" length="middle"/>
+<pin name="P2" x="-25.4" y="35.56" length="middle"/>
+<pin name="P3" x="-25.4" y="30.48" length="middle"/>
+<pin name="P4" x="-25.4" y="25.4" length="middle"/>
+<pin name="P5" x="-25.4" y="20.32" length="middle"/>
+<pin name="P6" x="-25.4" y="15.24" length="middle"/>
+<pin name="P7" x="-25.4" y="10.16" length="middle"/>
+<pin name="P8" x="-25.4" y="5.08" length="middle"/>
+<pin name="P9" x="-25.4" y="0" length="middle"/>
+<pin name="P10" x="-25.4" y="-5.08" length="middle"/>
+<pin name="P11" x="-25.4" y="-10.16" length="middle"/>
+<pin name="P12" x="-25.4" y="-15.24" length="middle"/>
+<pin name="P13" x="-25.4" y="-20.32" length="middle"/>
+<pin name="P14" x="-25.4" y="-25.4" length="middle"/>
+<pin name="P15" x="-25.4" y="-30.48" length="middle"/>
+<pin name="P16" x="-25.4" y="-35.56" length="middle"/>
+<pin name="P17" x="-25.4" y="-40.64" length="middle"/>
+<pin name="P18" x="-25.4" y="-45.72" length="middle"/>
+<pin name="P19" x="-25.4" y="-50.8" length="middle"/>
+<pin name="P20" x="-25.4" y="-55.88" length="middle"/>
+<pin name="P21" x="-25.4" y="-60.96" length="middle"/>
+<pin name="P22" x="-25.4" y="-66.04" length="middle"/>
+<pin name="P23" x="-25.4" y="-71.12" length="middle"/>
+<pin name="P24" x="-25.4" y="-76.2" length="middle"/>
+<pin name="P25" x="-25.4" y="-81.28" length="middle"/>
+<pin name="P26" x="-25.4" y="-86.36" length="middle"/>
+<pin name="P27" x="-25.4" y="-91.44" length="middle"/>
+<pin name="P28" x="-25.4" y="-96.52" length="middle"/>
+<pin name="P29" x="-25.4" y="-101.6" length="middle"/>
+<pin name="GND1" x="-5.08" y="-111.76" length="middle" rot="R90"/>
+<pin name="GND2" x="0" y="-111.76" length="middle" rot="R90"/>
+<pin name="GND3" x="5.08" y="-111.76" length="middle" rot="R90"/>
+<pin name="TMS" x="25.4" y="-101.6" length="middle" rot="R180"/>
+<pin name="TCK" x="25.4" y="-96.52" length="middle" rot="R180"/>
+<pin name="TDO" x="25.4" y="-91.44" length="middle" rot="R180"/>
+<pin name="TDI" x="25.4" y="-86.36" length="middle" rot="R180"/>
+<pin name="PGM" x="25.4" y="-81.28" length="middle" rot="R180"/>
+<pin name="CTP-1" x="25.4" y="-71.12" length="middle" rot="R180"/>
+<pin name="CTP-2" x="25.4" y="-66.04" length="middle" rot="R180"/>
+<pin name="CTP-3" x="25.4" y="-60.96" length="middle" rot="R180"/>
+<pin name="CTP-4" x="25.4" y="-55.88" length="middle" rot="R180"/>
+<pin name="3.3V" x="25.4" y="-45.72" length="middle" rot="R180"/>
+<pin name="5V" x="25.4" y="-40.64" length="middle" rot="R180"/>
+<wire x1="-20.32" y1="45.72" x2="-20.32" y2="-106.68" width="0.254" layer="97"/>
+<wire x1="-20.32" y1="-106.68" x2="20.32" y2="-106.68" width="0.254" layer="97"/>
+<wire x1="20.32" y1="-106.68" x2="20.32" y2="45.72" width="0.254" layer="97"/>
+<wire x1="20.32" y1="45.72" x2="-20.32" y2="45.72" width="0.254" layer="97"/>
 </symbol>
 </symbols>
 <devicesets>
+<deviceset name="DAZZLER">
+<gates>
+<gate name="G$1" symbol="DAZZLER" x="0" y="33.02"/>
+</gates>
+<devices>
+<device name="" package="DAZZLER-PAD">
+<connects>
+<connect gate="G$1" pin="3.3V" pad="P$41"/>
+<connect gate="G$1" pin="5V" pad="P$43"/>
+<connect gate="G$1" pin="CTP-1" pad="P$37"/>
+<connect gate="G$1" pin="CTP-2" pad="P$38"/>
+<connect gate="G$1" pin="CTP-3" pad="P$39"/>
+<connect gate="G$1" pin="CTP-4" pad="P$40"/>
+<connect gate="G$1" pin="GND1" pad="P$8"/>
+<connect gate="G$1" pin="GND2" pad="P$24"/>
+<connect gate="G$1" pin="GND3" pad="P$42"/>
+<connect gate="G$1" pin="P1" pad="P$1"/>
+<connect gate="G$1" pin="P10" pad="P$11"/>
+<connect gate="G$1" pin="P11" pad="P$12"/>
+<connect gate="G$1" pin="P12" pad="P$13"/>
+<connect gate="G$1" pin="P13" pad="P$14"/>
+<connect gate="G$1" pin="P14" pad="P$15"/>
+<connect gate="G$1" pin="P15" pad="P$16"/>
+<connect gate="G$1" pin="P16" pad="P$17"/>
+<connect gate="G$1" pin="P17" pad="P$18"/>
+<connect gate="G$1" pin="P18" pad="P$19"/>
+<connect gate="G$1" pin="P19" pad="P$20"/>
+<connect gate="G$1" pin="P2" pad="P$2"/>
+<connect gate="G$1" pin="P20" pad="P$21"/>
+<connect gate="G$1" pin="P21" pad="P$22"/>
+<connect gate="G$1" pin="P22" pad="P$23"/>
+<connect gate="G$1" pin="P23" pad="P$25"/>
+<connect gate="G$1" pin="P24" pad="P$26"/>
+<connect gate="G$1" pin="P25" pad="P$27"/>
+<connect gate="G$1" pin="P26" pad="P$28"/>
+<connect gate="G$1" pin="P27" pad="P$29"/>
+<connect gate="G$1" pin="P28" pad="P$30"/>
+<connect gate="G$1" pin="P29" pad="P$31"/>
+<connect gate="G$1" pin="P3" pad="P$3"/>
+<connect gate="G$1" pin="P4" pad="P$4"/>
+<connect gate="G$1" pin="P5" pad="P$5"/>
+<connect gate="G$1" pin="P6" pad="P$6"/>
+<connect gate="G$1" pin="P7" pad="P$7"/>
+<connect gate="G$1" pin="P8" pad="P$9"/>
+<connect gate="G$1" pin="P9" pad="P$10"/>
+<connect gate="G$1" pin="PGM" pad="P$36"/>
+<connect gate="G$1" pin="TCK" pad="P$33"/>
+<connect gate="G$1" pin="TDI" pad="P$35"/>
+<connect gate="G$1" pin="TDO" pad="P$34"/>
+<connect gate="G$1" pin="TMS" pad="P$32"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
 </devicesets>
 </library>
 </drawing>
