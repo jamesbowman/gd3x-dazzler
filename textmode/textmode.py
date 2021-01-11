@@ -10,8 +10,6 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageChops
 import json
 from collections import defaultdict
 
-from spidriver import SPIDriver
-
 def as565(r, g, b):
     return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3)
 
@@ -41,7 +39,7 @@ class Textmode:
             gd.cmd_setrotate(2)
             (sw, sh) = (720, 1280)
 
-        font = ImageFont.truetype("../../../.fonts/IBMPlexMono-Medium.otf", fontsize)
+        font = ImageFont.truetype("../fonts/IBMPlexMono-Medium.otf", fontsize)
         ch = [chr(i) for i in range(32, 255)]
 
         im = Image.new("L", (256, 256))
@@ -398,6 +396,8 @@ class Textmode:
 tmodes = [('L', 14), ('L', 10), ('P', 13), ('P', 10)]
 
 if __name__ == "__main__":
+    from spidriver import SPIDriver
+
     gd = eve.GameduinoSPIDriver(SPIDriver(sys.argv[1]))
     gd.init()
     t = Textmode(gd, 'L')

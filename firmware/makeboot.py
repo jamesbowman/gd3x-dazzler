@@ -17,7 +17,7 @@ import textmode
 __VERSION__ = "1.1.0"
 
 LP = 0x1000 # load point for flash images
-FONTDIR="../../../.fonts/"
+FONTDIR="../fonts/"
 
 def gentext(s):
     fn = FONTDIR + "Arista-Pro-Alternate-Light-trial.ttf"
