@@ -20,7 +20,7 @@ LP = 0x1000 # load point for flash images
 FONTDIR="../fonts/"
 
 def gentext(s):
-    fn = FONTDIR + "Arista-Pro-Alternate-Light-trial.ttf"
+    fn = FONTDIR + "dazzler-logo-font.ttf"
     font = ImageFont.truetype(fn, 250)
     im = Image.new("L", (2000, 1000))
     draw = ImageDraw.Draw(im)
