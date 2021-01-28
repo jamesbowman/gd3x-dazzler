@@ -12,7 +12,6 @@ build/stamp.fs:
 
 clean:
 	rm -f build/nuc.hex
-	make -C icestorm clean
 	make -C verilator clean
 
 UNAME_S := $(shell uname -s)
