@@ -764,8 +764,10 @@ module top(
   wire dvg_go;
 
   reg [15:0] asteroids_switches;
-
   wire [71:0] soundblock;
+  reg dvg_go_flag = 0;
+
+`ifdef OPTION_ASTEROIDS
   asteroids _asteroids (
     .fastclk(cpuclk),
     .reset(m6502_reset),
@@ -779,11 +781,12 @@ module top(
     .debug(m6502_debug)
   );
 
-  reg dvg_go_flag = 0;
   always @(posedge cpuclk) begin
     if (dvg_go)
       dvg_go_flag <= ~dvg_go_flag;
   end
+
+`endif
 
   // ------------------------------------------------------------------------
 
