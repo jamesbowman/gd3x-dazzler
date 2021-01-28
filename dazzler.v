@@ -1,6 +1,7 @@
 `default_nettype none
 
 `define CONFIG_SPI
+// `define CONFIG_GPIO
 
 module bram_tdp #(
     parameter DATA = 72,
