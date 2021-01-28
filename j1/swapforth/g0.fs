@@ -1,3 +1,3 @@
 0 slot
-#binclude load _loadflash_base.bin
+#binclude load ../../firmware/_loadflash_base.bin
 0 run

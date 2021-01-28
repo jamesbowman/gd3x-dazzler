@@ -58,6 +58,7 @@ CDELAY $8000 + constant CDELAY2
 ; is getc
 
 :noname
+    cr ." Textmode"
     200 ms key? if
         quit
     else

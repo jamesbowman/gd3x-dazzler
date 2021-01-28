@@ -117,7 +117,13 @@ $25f0 reg REG_FLASH_STATUS
     loop ;
 
 : cmdspace  REG_CMDB_SPACE eve@ ;
-: finish    begin cmdspace $ffc = until ;
+: finish
+    begin
+        cmdspace
+        dup 1 and if cr ." EXCEPTION" begin again then
+        $ffc =
+    until
+    ;
 : stream    REG_CMDB_WRITE eve! ;
 
 : eve-ready
@@ -238,10 +244,15 @@ $25f0 reg REG_FLASH_STATUS
 
 : (loadbin)
     \ Now: $ffff8: length, $ffffc: CRC
-    cspi
+    CSPI
     $ffffc. eve@. result d=
     dup if
-        $ffff8. eve@. e2fl
+        $ffff8. eve@.
+        cr ." Writing to flash, length: " 2dup d.
+        e2fl
+        cr ." Load complete"
+    else
+        cr ." CRC mismatch. Not loading."
     then
     ;
 
@@ -256,7 +267,9 @@ $25f0 reg REG_FLASH_STATUS
             key >spi
         loop
     repeat 
+    cr ." finishing"
     finish
+    cr ." Finished EVE transfer"
 
     (loadbin)
     ;

@@ -459,8 +459,8 @@ include fs.fs
 
 : frob ( u )
     begin
-        dup hi 1 ms
-        dup lo 1 ms
+        dup hi 2000 ms
+        dup lo 2000 ms
     again ;
 : hail
     30 3 do i in loop

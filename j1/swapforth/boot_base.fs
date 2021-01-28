@@ -123,14 +123,23 @@ defer failmsg
 : sep space '|' emit space ;
 
 :noname
+    cr
     ." boot_base"               sep
     ." slot " origin .          sep
     dna type                    sep
     stamp type                  sep
     ." GENERAL5=" general5 .x   sep
+    cr cr
 
     general5 $DA22 = if
-        eve-start loadbin begin again
+        eve-start
+        2 0 do
+            i slot flashoff 2!
+            loadbin
+        loop
+        slots
+        0 playstream
+        begin again
     then
     ['] bootmenu is menu            \ START+X+Y brings up the bootmenu
     wii-poll
@@ -164,3 +173,5 @@ defer failmsg
     ;
 
 ' loadsd is serv-load               \ Allow SPI slot loading
+
+: x /fat32 root_dir_first_cluster 2@ cluster 160 0 do 16 get scratch 16 dump loop ;
