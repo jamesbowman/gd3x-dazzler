@@ -22,8 +22,8 @@ module j1a(input wire clk,
   wire [12:0] code_addr;
   wire [15:0] mem_raddr;
   /* verilator lint_on UNUSED */
-  wire [15:0] din;
-  wire [15:0] insn;
+  reg [15:0] din;
+  reg [15:0] insn;
 
   reg [15:0] ram_prog[0:8191] /* verilator public_flat */;
   always @(posedge clk) begin
