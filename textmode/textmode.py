@@ -111,7 +111,7 @@ class Textmode:
         self.scrollblk = len(colorblk)
         gd.cmd_memwrite(len(colorblk), 4 * self.H)
         for i in range(self.H):
-            gd.VertexTranslateY(16 * -self.h2 * i)
+            gd.VertexTranslateY(-self.h2 * i)
 
         gd.cmd_inflate(fm)
         c = eve.align4(zlib.compress(fim.tobytes()))
@@ -172,7 +172,7 @@ class Textmode:
             gd.RestoreContext()
 
         gd.cmd_memwrite(eve.REG_MACRO_0, 4)
-        gd.VertexTranslateY(16 * 0)
+        gd.VertexTranslateY(0)
 
         gd.Macro(0)
         gd.VertexFormat(0)
@@ -201,7 +201,7 @@ class Textmode:
         colorpass(0)
 
         # Cursor drawing
-        gd.VertexTranslateY(16 * 0)
+        gd.VertexTranslateY(0)
         gd.BlendFunc(eve.SRC_ALPHA, eve.ONE_MINUS_SRC_ALPHA)
         gd.Begin(eve.BITMAPS)
         gd.BitmapHandle(2)
