@@ -155,8 +155,8 @@ def make_menu():
     gd.StencilMask(0)
 
     rim = [
-        (96, (0x40, 0x40, 0x40)),
-        (64, (0x18, 0x00, 0x00))]
+        (12, (0x40, 0x40, 0x40)),
+        ( 8, (0x18, 0x00, 0x00))]
 
     px = 110 - 4
     for s in range(8):
@@ -178,7 +178,7 @@ def make_menu():
         gd.Begin(eve.POINTS)
         for (w,col) in rim:
             gd.ColorRGB(*col)
-            gd.PointSize(16 * 20 + w)
+            gd.PointSize(2 * 20 + w)
             gd.Vertex2f(px, y + 45)
 
         gd.ColorRGB(0xff, 0xff, 0xff)
