@@ -14,7 +14,7 @@ To build:
 3. Install the Python requirements:
    pip install -r requirements.txt
 
-Then edit `xilinxmake` to point to you Xilinx WebPack installation.
+Then edit `xilinxmake` to point to your Xilinx WebPack installation.
 
 After this `make` will build the firmware.
 
