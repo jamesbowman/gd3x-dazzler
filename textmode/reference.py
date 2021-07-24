@@ -18,11 +18,19 @@ class Recorder(eve.Gameduino):
         pass
 
 if __name__ == "__main__":
+    vizmode = (sys.argv[1] == '-v')
+    if vizmode:
+        sys.argv.pop(1)
+
     gd = Recorder()
+    if vizmode:
+        gd.cmd_regwrite(eve.REG_HSIZE, 1280)
+        gd.cmd_regwrite(eve.REG_VSIZE, 720)
     t = textmode.Textmode(gd)
     t.configure('L', 14)
     t.dump_fs()
-    gd.pb = b''
+    if not vizmode:
+        gd.pb = b''
 
     fn = sys.argv[1]
     with open(fn, "rb") as f:
@@ -31,14 +39,3 @@ if __name__ == "__main__":
         t.render(getc)
     with open(fn + ".ref", "wb") as f:
         f.write(gd.pb)
-    if 0:
-        [print("%08x" % x) for x in array.array("I", gd.pb)]
-        print()
-
-    with open(fn, "rb") as f:
-        dd = f.read()
-        tb = " ".join([("%d c," % b) for b in dd])
-        with open(fn + ".fs", "w") as fs:
-            fs.write("here\n")
-            fs.write(textwrap.fill(tb, 127))
-            fs.write("\n%d setbuf terminal\n" % len(dd)) 
